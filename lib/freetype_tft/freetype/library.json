@@ -1,27 +1,32 @@
 {
-  "name":"freetype",
+  "name": "freetype",
   "version": "2.11.1",
-  "description":"Software library to render fonts",
-  "keywords":"freetype",
+  "description": "Software library to render fonts",
+  "keywords": "freetype",
   "license": "FreeType License",
   "repository": {
     "type": "git",
     "url": "https://gitlab.freedesktop.org/freetype"
-	},
+  },
   "frameworks": "*",
   "platforms": "*",
   "build": {
     "srcFilter": [
       "+<base/ftsystem.c>",
       "+<base/ftinit.c>",
-      "+<base/ftmm.c>",
       "+<base/ftdebug.c>",
       "+<base/ftbase.c>",
       "+<truetype/truetype.c>",
       "+<sfnt/sfnt.c>",
       "+<smooth/smooth.c>"
     ],
-    "flags": [ "-DFT2_BUILD_LIBRARY", "-I include" ],
-    "includeDirs": ["include","devel"]
+    "flags": [
+      "-DFT2_BUILD_LIBRARY",
+      "-I include"
+    ],
+    "includeDirs": [
+      "devel",
+      "include"
+    ]
   }
 }

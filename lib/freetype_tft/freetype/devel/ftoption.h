@@ -1,10 +1,10 @@
 /****************************************************************************
  *
- * ftoption.h
+ * ftoption.h (for development)
  *
  *   User-selectable configuration macros (specification only).
  *
- * Copyright (C) 1996-2019 by
+ * Copyright (C) 1996-2021 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -42,7 +42,7 @@ FT_BEGIN_HEADER
    *   the name of a directory that is included _before_ the FreeType include
    *   path during compilation.
    *
-   *   The default FreeType Makefiles and Jamfiles use the build directory
+   *   The default FreeType Makefiles use the build directory
    *   `builds/<system>` by default, but you can easily change that for your
    *   own projects.
    *
@@ -105,8 +105,7 @@ FT_BEGIN_HEADER
    *
    * ```
    *   FREETYPE_PROPERTIES=truetype:interpreter-version=35 \
-   *                       cff:no-stem-darkening=1 \
-   *                       autofitter:warping=1
+   *                       cff:no-stem-darkening=1
    * ```
    *
    */
@@ -121,12 +120,10 @@ FT_BEGIN_HEADER
    * mitigate color fringes inherent to this technology, you also need to
    * explicitly set up LCD filtering.
    *
-   * Note that this feature is covered by several Microsoft patents and
-   * should not be activated in any default build of the library.  When this
-   * macro is not defined, FreeType offers alternative LCD rendering
-   * technology that produces excellent output without LCD filtering.
+   * When this macro is not defined, FreeType offers alternative LCD
+   * rendering technology that produces excellent output.
    */
-#define FT_CONFIG_OPTION_SUBPIXEL_RENDERING
+/* #define FT_CONFIG_OPTION_SUBPIXEL_RENDERING */
 
 
   /**************************************************************************
@@ -183,7 +180,7 @@ FT_BEGIN_HEADER
    *
    *   Define this macro if you want to enable this 'feature'.
    */
-/* #define FT_CONFIG_OPTION_USE_LZW */
+#define FT_CONFIG_OPTION_USE_LZW
 
 
   /**************************************************************************
@@ -198,7 +195,7 @@ FT_BEGIN_HEADER
    *   Define this macro if you want to enable this 'feature'.  See also the
    *   macro `FT_CONFIG_OPTION_SYSTEM_ZLIB` below.
    */
-/* #define FT_CONFIG_OPTION_USE_ZLIB */
+#define FT_CONFIG_OPTION_USE_ZLIB
 
 
   /**************************************************************************
@@ -243,7 +240,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-/* #define FT_CONFIG_OPTION_USE_BZIP2 */
+#define FT_CONFIG_OPTION_USE_BZIP2
 
 
   /**************************************************************************
@@ -254,7 +251,7 @@ FT_BEGIN_HEADER
    * stream support, in the cases where file stream support is not necessary
    * such as memory loading of font files.
    */
-#define FT_CONFIG_OPTION_DISABLE_STREAM_SUPPORT
+/* #define FT_CONFIG_OPTION_DISABLE_STREAM_SUPPORT */
 
 
   /**************************************************************************
@@ -272,7 +269,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-/* #define FT_CONFIG_OPTION_USE_PNG */
+#define FT_CONFIG_OPTION_USE_PNG
 
 
   /**************************************************************************
@@ -289,7 +286,23 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-/* #define FT_CONFIG_OPTION_USE_HARFBUZZ */
+#define FT_CONFIG_OPTION_USE_HARFBUZZ
+
+
+  /**************************************************************************
+   *
+   * Brotli support.
+   *
+   *   FreeType uses the Brotli library to provide support for decompressing
+   *   WOFF2 streams.
+   *
+   *   Define this macro if you want to enable this 'feature'.
+   *
+   *   If you use a build system like cmake or the `configure` script,
+   *   options set by those programs have precedence, overwriting the value
+   *   here with the configured one.
+   */
+#define FT_CONFIG_OPTION_USE_BROTLI
 
 
   /**************************************************************************
@@ -314,7 +327,7 @@ FT_BEGIN_HEADER
    *   You would normally undefine this configuration macro when building a
    *   version of FreeType that doesn't contain a Type~1 or CFF driver.
    */
-/* #define FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
+#define FT_CONFIG_OPTION_POSTSCRIPT_NAMES
 
 
   /**************************************************************************
@@ -331,7 +344,7 @@ FT_BEGIN_HEADER
    *   in your 'psnames' module.  The Type~1 driver will not be able to
    *   synthesize a Unicode charmap out of the glyphs found in the fonts.
    */
-/* #define FT_CONFIG_OPTION_ADOBE_GLYPH_LIST */
+#define FT_CONFIG_OPTION_ADOBE_GLYPH_LIST
 
 
   /**************************************************************************
@@ -344,7 +357,7 @@ FT_BEGIN_HEADER
    *
    *   Note that the 'FOND' resource isn't checked.
    */
-/* #define FT_CONFIG_OPTION_MAC_FONTS */
+#define FT_CONFIG_OPTION_MAC_FONTS
 
 
   /**************************************************************************
@@ -376,7 +389,7 @@ FT_BEGIN_HEADER
    * incrementally as the document is parsed, such as the Ghostscript
    * interpreter for the PostScript language.
    */
-/* #define FT_CONFIG_OPTION_INCREMENTAL */
+#define FT_CONFIG_OPTION_INCREMENTAL
 
 
   /**************************************************************************
@@ -413,8 +426,23 @@ FT_BEGIN_HEADER
    *   Do not `#undef` these macros here since the build system might define
    *   them for certain configurations only.
    */
-#define FT_DEBUG_LEVEL_ERROR
-/* #define FT_DEBUG_LEVEL_TRACE */
+// #define FT_DEBUG_LEVEL_ERROR
+#define FT_DEBUG_LEVEL_TRACE
+
+
+  /**************************************************************************
+   *
+   * Logging
+   *
+   *   Compiling FreeType in debug or trace mode makes FreeType write error
+   *   and trace log messages to `stderr`.  Enabling this macro
+   *   automatically forces the `FT_DEBUG_LEVEL_ERROR` and
+   *   `FT_DEBUG_LEVEL_TRACE` macros and allows FreeType to write error and
+   *   trace log messages to a file instead of `stderr`.  For writing logs
+   *   to a file, FreeType uses an the external `dlg` library (the source
+   *   code is in `src/dlg`).
+   */
+#define FT_DEBUG_LOGGING
 
 
   /**************************************************************************
@@ -455,7 +483,7 @@ FT_BEGIN_HEADER
    *   Do not `#undef` these macros here since the build system might define
    *   them for certain configurations only.
    */
-/* #define FT_DEBUG_AUTOFIT */
+#define FT_DEBUG_AUTOFIT
 
 
   /**************************************************************************
@@ -473,7 +501,7 @@ FT_BEGIN_HEADER
    *   Do not `#undef` this macro here since the build system might define it
    *   for certain configurations only.
    */
-/* #define FT_DEBUG_MEMORY */
+#define FT_DEBUG_MEMORY
 
 
   /**************************************************************************
@@ -521,16 +549,16 @@ FT_BEGIN_HEADER
    * embedded bitmaps in all formats using the 'sfnt' module (namely
    * TrueType~& OpenType).
    */
-/* #define TT_CONFIG_OPTION_EMBEDDED_BITMAPS */
+#define TT_CONFIG_OPTION_EMBEDDED_BITMAPS
 
 
   /**************************************************************************
    *
-   * Define `TT_CONFIG_OPTION_COLOR_LAYERS` if you want to support coloured
+   * Define `TT_CONFIG_OPTION_COLOR_LAYERS` if you want to support colored
    * outlines (from the 'COLR'/'CPAL' tables) in all formats using the 'sfnt'
    * module (namely TrueType~& OpenType).
    */
-/* #define TT_CONFIG_OPTION_COLOR_LAYERS */
+#define TT_CONFIG_OPTION_COLOR_LAYERS
 
 
   /**************************************************************************
@@ -545,7 +573,7 @@ FT_BEGIN_HEADER
    *
    * (By default, the module uses 'psnames' to extract glyph names.)
    */
-/* #define TT_CONFIG_OPTION_POSTSCRIPT_NAMES */
+#define TT_CONFIG_OPTION_POSTSCRIPT_NAMES
 
 
   /**************************************************************************
@@ -559,7 +587,7 @@ FT_BEGIN_HEADER
    * Accessing SFNT names is done through the functions declared in
    * `ftsnames.h`.
    */
-/* #define TT_CONFIG_OPTION_SFNT_NAMES */
+#define TT_CONFIG_OPTION_SFNT_NAMES
 
 
   /**************************************************************************
@@ -569,15 +597,15 @@ FT_BEGIN_HEADER
    *   Here you can fine-tune which TrueType CMap table format shall be
    *   supported.
    */
-//#define TT_CONFIG_CMAP_FORMAT_0
-//#define TT_CONFIG_CMAP_FORMAT_2
+#define TT_CONFIG_CMAP_FORMAT_0
+#define TT_CONFIG_CMAP_FORMAT_2
 #define TT_CONFIG_CMAP_FORMAT_4
-//#define TT_CONFIG_CMAP_FORMAT_6
-//#define TT_CONFIG_CMAP_FORMAT_8
-//#define TT_CONFIG_CMAP_FORMAT_10
-//#define TT_CONFIG_CMAP_FORMAT_12
-//#define TT_CONFIG_CMAP_FORMAT_13
-//#define TT_CONFIG_CMAP_FORMAT_14
+#define TT_CONFIG_CMAP_FORMAT_6
+#define TT_CONFIG_CMAP_FORMAT_8
+#define TT_CONFIG_CMAP_FORMAT_10
+#define TT_CONFIG_CMAP_FORMAT_12
+#define TT_CONFIG_CMAP_FORMAT_13
+#define TT_CONFIG_CMAP_FORMAT_14
 
 
   /*************************************************************************/
@@ -657,8 +685,9 @@ FT_BEGIN_HEADER
    * [1]
    * https://www.microsoft.com/typography/cleartype/truetypecleartype.aspx
    */
-/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  1         */
-/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  ( 1 | 2 ) */
+/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  1     */
+/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  2     */
+#define TT_CONFIG_OPTION_SUBPIXEL_HINTING     ( 1 | 2 )
 
 
   /**************************************************************************
@@ -687,7 +716,7 @@ FT_BEGIN_HEADER
    * 'avar' tables).  Tagged 'Font Variations', this is now part of OpenType
    * also.  This has many similarities to Type~1 Multiple Masters support.
    */
-/* #define TT_CONFIG_OPTION_GX_VAR_SUPPORT */
+#define TT_CONFIG_OPTION_GX_VAR_SUPPORT
 
 
   /**************************************************************************
@@ -695,7 +724,7 @@ FT_BEGIN_HEADER
    * Define `TT_CONFIG_OPTION_BDF` if you want to include support for an
    * embedded 'BDF~' table within SFNT-based bitmap formats.
    */
-/* #define TT_CONFIG_OPTION_BDF */
+#define TT_CONFIG_OPTION_BDF
 
 
   /**************************************************************************
@@ -777,7 +806,7 @@ FT_BEGIN_HEADER
    * switch between the two engines using the `hinting-engine` property of
    * the 'type1' driver module.
    */
-/* #define T1_CONFIG_OPTION_OLD_ENGINE */
+#define T1_CONFIG_OPTION_OLD_ENGINE
 
 
   /*************************************************************************/
@@ -819,7 +848,7 @@ FT_BEGIN_HEADER
    * between the two engines using the `hinting-engine` property of the 'cff'
    * driver module.
    */
-/* #define CFF_CONFIG_OPTION_OLD_ENGINE */
+#define CFF_CONFIG_OPTION_OLD_ENGINE
 
 
   /*************************************************************************/
@@ -846,7 +875,7 @@ FT_BEGIN_HEADER
    * If this option is activated, it can be controlled with the
    * `no-long-family-names` property of the 'pcf' driver module.
    */
-/* #define PCF_CONFIG_OPTION_LONG_FAMILY_NAMES */
+#define PCF_CONFIG_OPTION_LONG_FAMILY_NAMES
 
 
   /*************************************************************************/
@@ -863,34 +892,18 @@ FT_BEGIN_HEADER
    * Compile 'autofit' module with CJK (Chinese, Japanese, Korean) script
    * support.
    */
-/* #define AF_CONFIG_OPTION_CJK */
+#define AF_CONFIG_OPTION_CJK
 
 
   /**************************************************************************
    *
    * Compile 'autofit' module with fallback Indic script support, covering
    * some scripts that the 'latin' submodule of the 'autofit' module doesn't
-   * (yet) handle.
+   * (yet) handle.  Currently, this needs option `AF_CONFIG_OPTION_CJK`.
    */
-/* #define AF_CONFIG_OPTION_INDIC */
-
-
-  /**************************************************************************
-   *
-   * Compile 'autofit' module with warp hinting.  The idea of the warping
-   * code is to slightly scale and shift a glyph within a single dimension so
-   * that as much of its segments are aligned (more or less) on the grid.  To
-   * find out the optimal scaling and shifting value, various parameter
-   * combinations are tried and scored.
-   *
-   * You can switch warping on and off with the `warping` property of the
-   * auto-hinter (see file `ftdriver.h` for more information; by default it
-   * is switched off).
-   *
-   * This experimental option is not active if the rendering mode is
-   * `FT_RENDER_MODE_LIGHT`.
-   */
-#define AF_CONFIG_OPTION_USE_WARPER
+#ifdef AF_CONFIG_OPTION_CJK
+#define AF_CONFIG_OPTION_INDIC
+#endif
 
 
   /**************************************************************************
@@ -941,6 +954,21 @@ FT_BEGIN_HEADER
 #define  TT_SUPPORT_SUBPIXEL_HINTING_MINIMAL
 #endif
 #endif
+#endif
+
+
+  /*
+   * The TT_SUPPORT_COLRV1 macro is defined to indicate to clients that this
+   * version of FreeType has support for 'COLR' v1 API.  This definition is
+   * useful to FreeType clients that want to build in support for 'COLR' v1
+   * depending on a tip-of-tree checkout before it is officially released in
+   * FreeType, and while the feature cannot yet be tested against using
+   * version macros.  Don't change this macro.  This may be removed once the
+   * feature is in a FreeType release version and version macros can be used
+   * to test for availability.
+   */
+#ifdef TT_CONFIG_OPTION_COLOR_LAYERS
+#define  TT_SUPPORT_COLRV1
 #endif
 
 

@@ -84,17 +84,19 @@ void loadCharacter(char character, int pixel_height) {
   printf("FT_Set_Pixel_Sizes(face, 0,  %d):%d\n", pixel_height, error);
   FT_UInt glyph_index = FT_Get_Char_Index(face, (uint32_t)character);
   printf("glyph_index:%d\n", glyph_index);
-  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
-  // error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_LIGHT);
-  // printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
+  if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+    error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+    printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
+  }
 }
 
 void setup() {
   Serial.begin(115200);
   tft.init();
   tft.initDMA(true);
-  tft.fillScreen(TFT_BLACK);
+  tft.fillScreen(TFT_RED);
   initFreeType();
   Serial.printf("Done.\n");
 }
@@ -103,35 +105,36 @@ int flag = 1;
 void loop() {
   ph += flag;
   loadCharacter('A', ph);
+  Serial.printf("loadCharacter Done.\n");
   uint8_t *bitmap;
-  // bitmap = (uint8_t *)malloc(face->glyph->bitmap.width *
-  //                            face->glyph->bitmap.rows / 2);
-  // memset(bitmap, 0, face->glyph->bitmap.width * face->glyph->bitmap.rows / 2);
+  bitmap = (uint8_t *)malloc(face->glyph->bitmap.width *
+                             face->glyph->bitmap.rows * 2);
+  memset(bitmap, 0, face->glyph->bitmap.width * face->glyph->bitmap.rows * 2);
 
-  // size_t pos = 0;
-  // for (size_t y = 0; y < face->glyph->bitmap.rows; ++y) {
-  //   for (size_t x = 0; x < face->glyph->bitmap.width; ++x) {
-  //     uint8_t color =
-  //         face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-  //     bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+  size_t pos = 0;
+  for (size_t y = 0; y < face->glyph->bitmap.rows; ++y) {
+    for (size_t x = 0; x < face->glyph->bitmap.width; ++x) {
+      uint8_t color =
+          face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+      bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
 
-  //     Serial.printf("%d", (int)(bitmap[pos >> 2] == 0));
-  //     if ((++pos % face->glyph->bitmap.pitch) == 0) {
-  //       Serial.println();
-  //     }
-  //   }
-  // }
-  // Serial.printf("w:%d,h:%d,pixel_mode:%d,num_grays:%d, pitch:%d\n",
-  //               face->glyph->bitmap.width, face->glyph->bitmap.rows,
-  //               face->glyph->bitmap.pixel_mode,
-  //               face->glyph->bitmap.num_grays, face->glyph->bitmap.pitch);
+      Serial.printf("%d", (int)(bitmap[pos >> 2] == 0));
+      if ((++pos % face->glyph->bitmap.pitch) == 0) {
+        Serial.println();
+      }
+    }
+  }
+  Serial.printf("w:%d,h:%d,pixel_mode:%d,num_grays:%d, pitch:%d\n",
+                face->glyph->bitmap.width, face->glyph->bitmap.rows,
+                face->glyph->bitmap.pixel_mode, face->glyph->bitmap.num_grays,
+                face->glyph->bitmap.pitch);
   tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
-                   face->glyph->bitmap.buffer);
+                face->glyph->bitmap.buffer);
 
-  delay(100);
-  // free(bitmap);
+  delay(10000);
+  free(bitmap);
   FT_Done_Face(face);
-  if (ph > 240) {
+  if (ph > 120) {
     flag = -1;
   }
   if (ph < 14) {
