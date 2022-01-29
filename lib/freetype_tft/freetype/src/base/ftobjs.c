@@ -962,7 +962,6 @@
         if ( !error && slot->format == FT_GLYPH_FORMAT_BITMAP )
           goto Load_Ok;
       }
-
       {
         FT_Face_Internal  internal        = face->internal;
         FT_Int            transform_flags = internal->transform_flags;
@@ -1086,10 +1085,17 @@
            load_flags & FT_LOAD_MONOCHROME )
         mode = FT_RENDER_MODE_MONO;
 
-      if ( load_flags & FT_LOAD_RENDER )
+      if ( load_flags & FT_LOAD_RENDER ){
+
         error = FT_Render_Glyph( slot, mode );
-      else
+        printf("error = FT_Render_Glyph\n");
+      }
+      else{
+
         ft_glyphslot_preset_bitmap( slot, mode, NULL );
+        printf("error = ft_glyphslot_preset_bitmap\n");
+      }
+
     }
 
 #ifdef FT_DEBUG_LEVEL_TRACE

@@ -180,7 +180,7 @@ FT_BEGIN_HEADER
    *
    *   Define this macro if you want to enable this 'feature'.
    */
-// #define FT_CONFIG_OPTION_USE_LZW
+#define FT_CONFIG_OPTION_USE_LZW
 
 
   /**************************************************************************
@@ -195,7 +195,7 @@ FT_BEGIN_HEADER
    *   Define this macro if you want to enable this 'feature'.  See also the
    *   macro `FT_CONFIG_OPTION_SYSTEM_ZLIB` below.
    */
-// #define FT_CONFIG_OPTION_USE_ZLIB
+#define FT_CONFIG_OPTION_USE_ZLIB
 
 
   /**************************************************************************
@@ -427,7 +427,7 @@ FT_BEGIN_HEADER
    *   them for certain configurations only.
    */
 /* #define FT_DEBUG_LEVEL_ERROR */
-#define FT_DEBUG_LEVEL_TRACE
+/* #define FT_DEBUG_LEVEL_TRACE */
 
 
   /**************************************************************************
@@ -444,7 +444,7 @@ FT_BEGIN_HEADER
    *
    *   This option needs a C99 compiler.
    */
-#define FT_DEBUG_LOGGING 
+/* #define FT_DEBUG_LOGGING */
 
 
   /**************************************************************************
@@ -551,7 +551,7 @@ FT_BEGIN_HEADER
    * embedded bitmaps in all formats using the 'sfnt' module (namely
    * TrueType~& OpenType).
    */
-// #define TT_CONFIG_OPTION_EMBEDDED_BITMAPS
+#define TT_CONFIG_OPTION_EMBEDDED_BITMAPS
 
 
   /**************************************************************************

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
-extern "C" {
+extern "C"
+{
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
@@ -12,7 +13,8 @@ typedef uint16_t st7789_color_t;
    ((st7789_color_t)(b) >> 3))
 
 inline void __attribute__((always_inline))
-st7789_color_to_rgb(st7789_color_t color, uint8_t *r, uint8_t *g, uint8_t *b) {
+st7789_color_to_rgb(st7789_color_t color, uint8_t *r, uint8_t *g, uint8_t *b)
+{
   *b = (color << 3);
   color >>= 5;
   color <<= 2;
@@ -35,7 +37,8 @@ uint8_t st7789_dither_table[256] = {
 
 inline st7789_color_t __attribute__((always_inline))
 st7789_rgb_to_color_dither(uint8_t r, uint8_t g, uint8_t b, uint16_t x,
-                           uint16_t y) {
+                           uint16_t y)
+{
   const uint8_t pos = ((y << 8) + (y << 3) + x) & 0xff;
   uint8_t rand_b = st7789_dither_table[pos];
   const uint8_t rand_r = rand_b & 0x07;
@@ -43,13 +46,16 @@ st7789_rgb_to_color_dither(uint8_t r, uint8_t g, uint8_t b, uint16_t x,
   const uint8_t rand_g = rand_b & 0x03;
   rand_b >>= 2;
 
-  if (r < 249) {
+  if (r < 249)
+  {
     r = r + rand_r;
   }
-  if (g < 253) {
+  if (g < 253)
+  {
     g = g + rand_g;
   }
-  if (b < 249) {
+  if (b < 249)
+  {
     b = b + rand_b;
   }
   return st7789_rgb_to_color(r, g, b);
@@ -65,12 +71,14 @@ TFT_eSPI tft = TFT_eSPI();
 static FT_Library library;
 FT_Error error;
 static FT_Face face;
-void initFreeType() {
+void initFreeType()
+{
   error = FT_Init_FreeType(&library);
   printf("FT_Init_FreeType(&library):%d\n", error);
 }
 
-void loadCharacter(char character, int pixel_height) {
+void loadCharacter(char character, int pixel_height)
+{
   error =
       FT_New_Memory_Face(library, ttf_start, ttf_end - ttf_start - 1, 0, &face);
   printf(
@@ -86,13 +94,29 @@ void loadCharacter(char character, int pixel_height) {
   printf("glyph_index:%d\n", glyph_index);
   error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
-  if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-    error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
-    printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
+  error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+  printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
+
+          printf("hinting->load_glyph\n");
+          size_t pos = 0;
+  for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
+  {
+    for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
+    {
+      int color =
+          face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+      // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+      printf("%d", color);
+      if ((++pos % face->glyph->bitmap.pitch) == 0)
+      {
+        printf("\n");
+      }
+    }
   }
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   tft.init();
   tft.initDMA(true);
@@ -102,28 +126,31 @@ void setup() {
 }
 int ph = 12;
 int flag = 1;
-void loop() {
+void loop()
+{
   ph += flag;
-  loadCharacter('A', ph);
+  loadCharacter('a', ph);
   Serial.printf("loadCharacter Done.\n");
   uint8_t *bitmap;
   bitmap = (uint8_t *)malloc(face->glyph->bitmap.width *
                              face->glyph->bitmap.rows * 2);
   memset(bitmap, 0, face->glyph->bitmap.width * face->glyph->bitmap.rows * 2);
 
-  size_t pos = 0;
-  for (size_t y = 0; y < face->glyph->bitmap.rows; ++y) {
-    for (size_t x = 0; x < face->glyph->bitmap.width; ++x) {
-      uint8_t color =
-          face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-      bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
-
-      Serial.printf("%d", (int)(bitmap[pos >> 2] == 0));
-      if ((++pos % face->glyph->bitmap.pitch) == 0) {
-        Serial.println();
-      }
-    }
-  }
+  // size_t pos = 0;
+  // for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
+  // {
+  //   for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
+  //   {
+  //     uint8_t color =
+  //         face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+  //     bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+  //     Serial.printf("%d", color);
+  //     if ((++pos % face->glyph->bitmap.pitch) == 0)
+  //     {
+  //       Serial.println();
+  //     }
+  //   }
+  // }
   Serial.printf("w:%d,h:%d,pixel_mode:%d,num_grays:%d, pitch:%d\n",
                 face->glyph->bitmap.width, face->glyph->bitmap.rows,
                 face->glyph->bitmap.pixel_mode, face->glyph->bitmap.num_grays,
@@ -134,10 +161,12 @@ void loop() {
   delay(10000);
   free(bitmap);
   FT_Done_Face(face);
-  if (ph > 120) {
+  if (ph > 120)
+  {
     flag = -1;
   }
-  if (ph < 14) {
+  if (ph < 14)
+  {
     flag = 1;
   }
 }
