@@ -1,45 +1,31 @@
-/****************************************************************************
- *
- * psmodule.c
- *
- *   psnames module implementation (body).
- *
- * Copyright (C) 1996-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  psmodule.c                                                             */
+/*                                                                         */
+/*    PSNames module implementation (body).                                */
+/*                                                                         */
+/*  Copyright 1996-2003, 2005-2008, 2012, 2013 by                          */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#include <freetype/internal/ftdebug.h>
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/services/svpscmap.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_OBJECTS_H
+#include FT_SERVICE_POSTSCRIPT_CMAPS_H
 
 #include "psmodule.h"
-
-  /*
-   * The file `pstables.h' with its arrays and its function
-   * `ft_get_adobe_glyph_index' is useful for other projects also (for
-   * example, `pdfium' is using it).  However, if used as a C++ header,
-   * including it in two different source files makes it necessary to use
-   * `extern const' for the declaration of its arrays, otherwise the data
-   * would be duplicated as mandated by the C++ standard.
-   *
-   * For this reason, we use `DEFINE_PS_TABLES' to guard the function
-   * definitions, and `DEFINE_PS_TABLES_DATA' to provide both proper array
-   * declarations and definitions.
-   */
-#include "pstables.h"
-#define  DEFINE_PS_TABLES
-#define  DEFINE_PS_TABLES_DATA
 #include "pstables.h"
 
 #include "psnamerr.h"
+#include "pspic.h"
 
 
 #ifdef FT_CONFIG_OPTION_POSTSCRIPT_NAMES
@@ -155,30 +141,31 @@
     /* Look for a non-initial dot in the glyph name in order to */
     /* find variants like `A.swash', `e.final', etc.            */
     {
-      FT_UInt32    value = 0;
-      const char*  p     = glyph_name;
+      const char*  p   = glyph_name;
+      const char*  dot = NULL;
 
 
-      for ( ; *p && *p != '.'; p++ )
-        ;
-
-      /* now look up the glyph in the Adobe Glyph List;      */
-      /* `.notdef', `.null' and the empty name are short cut */
-      if ( p > glyph_name )
+      for ( ; *p; p++ )
       {
-        value = (FT_UInt32)ft_get_adobe_glyph_index( glyph_name, p );
-
-        if ( *p == '.' )
-          value |= (FT_UInt32)VARIANT_BIT;
+        if ( *p == '.' && p > glyph_name )
+        {
+          dot = p;
+          break;
+        }
       }
 
-      return value;
+      /* now look up the glyph in the Adobe Glyph List */
+      if ( !dot )
+        return (FT_UInt32)ft_get_adobe_glyph_index( glyph_name, p );
+      else
+        return (FT_UInt32)( ft_get_adobe_glyph_index( glyph_name, dot ) |
+                            VARIANT_BIT );
     }
   }
 
 
   /* ft_qsort callback to sort the unicode map */
-  FT_COMPARE_DEF( int )
+  FT_CALLBACK_DEF( int )
   compare_uni_maps( const void*  a,
                     const void*  b )
   {
@@ -325,8 +312,9 @@
 
     /* we first allocate the table */
     table->num_maps = 0;
+    table->maps     = 0;
 
-    if ( !FT_QNEW_ARRAY( table->maps, num_glyphs + EXTRA_GLYPH_LIST_SIZE ) )
+    if ( !FT_NEW_ARRAY( table->maps, num_glyphs + EXTRA_GLYPH_LIST_SIZE ) )
     {
       FT_UInt     n;
       FT_UInt     count;
@@ -341,7 +329,7 @@
         const char*  gname = get_glyph_name( glyph_data, n );
 
 
-        if ( gname && *gname )
+        if ( gname )
         {
           ps_check_extra_glyph_name( gname, n,
                                      extra_glyphs, extra_glyph_list_states );
@@ -389,9 +377,7 @@
         /* Reallocate if the number of used entries is much smaller. */
         if ( count < num_glyphs / 2 )
         {
-          FT_MEM_QRENEW_ARRAY( table->maps,
-                               num_glyphs + EXTRA_GLYPH_LIST_SIZE,
-                               count );
+          (void)FT_RENEW_ARRAY( table->maps, num_glyphs, count );
           error = FT_Err_Ok;
         }
 
@@ -539,52 +525,59 @@
 
   FT_DEFINE_SERVICE_PSCMAPSREC(
     pscmaps_interface,
+    (PS_Unicode_ValueFunc)     ps_unicode_value,
+    (PS_Unicodes_InitFunc)     ps_unicodes_init,
+    (PS_Unicodes_CharIndexFunc)ps_unicodes_char_index,
+    (PS_Unicodes_CharNextFunc) ps_unicodes_char_next,
 
-    (PS_Unicode_ValueFunc)     ps_unicode_value,        /* unicode_value         */
-    (PS_Unicodes_InitFunc)     ps_unicodes_init,        /* unicodes_init         */
-    (PS_Unicodes_CharIndexFunc)ps_unicodes_char_index,  /* unicodes_char_index   */
-    (PS_Unicodes_CharNextFunc) ps_unicodes_char_next,   /* unicodes_char_next    */
+    (PS_Macintosh_NameFunc)    ps_get_macintosh_name,
+    (PS_Adobe_Std_StringsFunc) ps_get_standard_strings,
 
-    (PS_Macintosh_NameFunc)    ps_get_macintosh_name,   /* macintosh_name        */
-    (PS_Adobe_Std_StringsFunc) ps_get_standard_strings, /* adobe_std_strings     */
-
-    t1_standard_encoding,                               /* adobe_std_encoding    */
-    t1_expert_encoding                                  /* adobe_expert_encoding */
-  )
+    t1_standard_encoding,
+    t1_expert_encoding )
 
 #else
 
   FT_DEFINE_SERVICE_PSCMAPSREC(
     pscmaps_interface,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
-    NULL,                                               /* unicode_value         */
-    NULL,                                               /* unicodes_init         */
-    NULL,                                               /* unicodes_char_index   */
-    NULL,                                               /* unicodes_char_next    */
+    (PS_Macintosh_NameFunc)    ps_get_macintosh_name,
+    (PS_Adobe_Std_StringsFunc) ps_get_standard_strings,
 
-    (PS_Macintosh_NameFunc)    ps_get_macintosh_name,   /* macintosh_name        */
-    (PS_Adobe_Std_StringsFunc) ps_get_standard_strings, /* adobe_std_strings     */
-
-    t1_standard_encoding,                               /* adobe_std_encoding    */
-    t1_expert_encoding                                  /* adobe_expert_encoding */
-  )
+    t1_standard_encoding,
+    t1_expert_encoding )
 
 #endif /* FT_CONFIG_OPTION_ADOBE_GLYPH_LIST */
 
 
   FT_DEFINE_SERVICEDESCREC1(
     pscmaps_services,
-
-    FT_SERVICE_ID_POSTSCRIPT_CMAPS, &pscmaps_interface )
+    FT_SERVICE_ID_POSTSCRIPT_CMAPS, &PSCMAPS_INTERFACE_GET )
 
 
   static FT_Pointer
   psnames_get_service( FT_Module    module,
                        const char*  service_id )
   {
-    FT_UNUSED( module );
+    /* PSCMAPS_SERVICES_GET derefers `library' in PIC mode */
+#ifdef FT_CONFIG_OPTION_PIC
+    FT_Library  library;
 
-    return ft_service_list_lookup( pscmaps_services, service_id );
+
+    if ( !module )
+      return NULL;
+    library = module->library;
+    if ( !library )
+      return NULL;
+#else
+    FT_UNUSED( module );
+#endif
+
+    return ft_service_list_lookup( PSCMAPS_SERVICES_GET, service_id );
   }
 
 #endif /* FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
@@ -607,12 +600,10 @@
     0x20000L,   /* driver requires FreeType 2 or above */
 
     PUT_PS_NAMES_SERVICE(
-      (void*)&pscmaps_interface ),   /* module specific interface */
-
-    (FT_Module_Constructor)NULL,                                       /* module_init   */
-    (FT_Module_Destructor) NULL,                                       /* module_done   */
-    (FT_Module_Requester)  PUT_PS_NAMES_SERVICE( psnames_get_service ) /* get_interface */
-  )
+      (void*)&PSCMAPS_INTERFACE_GET ),   /* module specific interface */
+    (FT_Module_Constructor)NULL,
+    (FT_Module_Destructor) NULL,
+    (FT_Module_Requester)  PUT_PS_NAMES_SERVICE( psnames_get_service ) )
 
 
 /* END */

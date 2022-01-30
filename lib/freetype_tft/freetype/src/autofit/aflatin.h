@@ -1,33 +1,33 @@
-/****************************************************************************
- *
- * aflatin.h
- *
- *   Auto-fitter hinting routines for latin writing system
- *   (specification).
- *
- * Copyright (C) 2003-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  aflatin.h                                                              */
+/*                                                                         */
+/*    Auto-fitter hinting routines for latin script (specification).       */
+/*                                                                         */
+/*  Copyright 2003-2007, 2009, 2011-2012 by                                */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#ifndef AFLATIN_H_
-#define AFLATIN_H_
+#ifndef __AFLATIN_H__
+#define __AFLATIN_H__
 
 #include "afhints.h"
 
 
 FT_BEGIN_HEADER
 
-  /* the `latin' writing system */
 
-  AF_DECLARE_WRITING_SYSTEM_CLASS( af_latin_writing_system_class )
+  /* the latin-specific script class */
+
+  AF_DECLARE_SCRIPT_CLASS( af_latin_script_class )
 
 
   /* constants are given with units_per_em == 2048 in mind */
@@ -45,41 +45,49 @@ FT_BEGIN_HEADER
 
 
   /*
-   * The following declarations could be embedded in the file `aflatin.c';
-   * they have been made semi-public to allow alternate writing system
-   * hinters to re-use some of them.
+   *  The following declarations could be embedded in the file `aflatin.c';
+   *  they have been made semi-public to allow alternate script hinters to
+   *  re-use some of them.
    */
 
 
-#define AF_LATIN_IS_TOP_BLUE( b ) \
-          ( (b)->properties & AF_BLUE_PROPERTY_LATIN_TOP )
-#define AF_LATIN_IS_SUB_TOP_BLUE( b ) \
-          ( (b)->properties & AF_BLUE_PROPERTY_LATIN_SUB_TOP )
-#define AF_LATIN_IS_NEUTRAL_BLUE( b ) \
-          ( (b)->properties & AF_BLUE_PROPERTY_LATIN_NEUTRAL )
-#define AF_LATIN_IS_X_HEIGHT_BLUE( b ) \
-          ( (b)->properties & AF_BLUE_PROPERTY_LATIN_X_HEIGHT )
-#define AF_LATIN_IS_LONG_BLUE( b ) \
-          ( (b)->properties & AF_BLUE_PROPERTY_LATIN_LONG )
+  /* Latin (global) metrics management */
+
+  enum
+  {
+    AF_LATIN_BLUE_CAPITAL_TOP,
+    AF_LATIN_BLUE_CAPITAL_BOTTOM,
+    AF_LATIN_BLUE_SMALL_F_TOP,
+    AF_LATIN_BLUE_SMALL_TOP,
+    AF_LATIN_BLUE_SMALL_BOTTOM,
+    AF_LATIN_BLUE_SMALL_MINOR,
+
+    AF_LATIN_BLUE_MAX
+  };
+
+
+#define AF_LATIN_IS_TOP_BLUE( b )  ( (b) == AF_LATIN_BLUE_CAPITAL_TOP || \
+                                     (b) == AF_LATIN_BLUE_SMALL_F_TOP || \
+                                     (b) == AF_LATIN_BLUE_SMALL_TOP   )
 
 #define AF_LATIN_MAX_WIDTHS  16
+#define AF_LATIN_MAX_BLUES   AF_LATIN_BLUE_MAX
 
 
-#define AF_LATIN_BLUE_ACTIVE      ( 1U << 0 ) /* zone height is <= 3/4px   */
-#define AF_LATIN_BLUE_TOP         ( 1U << 1 ) /* we have a top blue zone   */
-#define AF_LATIN_BLUE_SUB_TOP     ( 1U << 2 ) /* we have a subscript top   */
-                                              /* blue zone                 */
-#define AF_LATIN_BLUE_NEUTRAL     ( 1U << 3 ) /* we have neutral blue zone */
-#define AF_LATIN_BLUE_ADJUSTMENT  ( 1U << 4 ) /* used for scale adjustment */
-                                              /* optimization              */
+  enum
+  {
+    AF_LATIN_BLUE_ACTIVE     = 1 << 0,  /* set if zone height is <= 3/4px */
+    AF_LATIN_BLUE_TOP        = 1 << 1,  /* result of AF_LATIN_IS_TOP_BLUE */
+    AF_LATIN_BLUE_ADJUSTMENT = 1 << 2,  /* used for scale adjustment      */
+                                        /* optimization                   */
+    AF_LATIN_BLUE_FLAG_MAX
+  };
 
 
   typedef struct  AF_LatinBlueRec_
   {
     AF_WidthRec  ref;
     AF_WidthRec  shoot;
-    FT_Pos       ascender;
-    FT_Pos       descender;
     FT_UInt      flags;
 
   } AF_LatinBlueRec, *AF_LatinBlue;
@@ -98,7 +106,7 @@ FT_BEGIN_HEADER
 
     /* ignored for horizontal metrics */
     FT_UInt          blue_count;
-    AF_LatinBlueRec  blues[AF_BLUE_STRINGSET_MAX];
+    AF_LatinBlueRec  blues[AF_LATIN_BLUE_MAX];
 
     FT_Fixed         org_scale;
     FT_Pos           org_delta;
@@ -108,9 +116,9 @@ FT_BEGIN_HEADER
 
   typedef struct  AF_LatinMetricsRec_
   {
-    AF_StyleMetricsRec  root;
-    FT_UInt             units_per_em;
-    AF_LatinAxisRec     axis[AF_DIMENSION_MAX];
+    AF_ScriptMetricsRec  root;
+    FT_UInt              units_per_em;
+    AF_LatinAxisRec      axis[AF_DIMENSION_MAX];
 
   } AF_LatinMetricsRec, *AF_LatinMetrics;
 
@@ -140,11 +148,15 @@ FT_BEGIN_HEADER
   /*************************************************************************/
   /*************************************************************************/
 
-#define AF_LATIN_HINTS_HORZ_SNAP    ( 1U << 0 ) /* stem width snapping  */
-#define AF_LATIN_HINTS_VERT_SNAP    ( 1U << 1 ) /* stem height snapping */
-#define AF_LATIN_HINTS_STEM_ADJUST  ( 1U << 2 ) /* stem width/height    */
-                                                /* adjustment           */
-#define AF_LATIN_HINTS_MONO         ( 1U << 3 ) /* monochrome rendering */
+  enum
+  {
+    AF_LATIN_HINTS_HORZ_SNAP   = 1 << 0, /* enable stem width snapping  */
+    AF_LATIN_HINTS_VERT_SNAP   = 1 << 1, /* enable stem height snapping */
+    AF_LATIN_HINTS_STEM_ADJUST = 1 << 2, /* enable stem width/height    */
+                                         /* adjustment                  */
+    AF_LATIN_HINTS_MONO        = 1 << 3  /* indicate monochrome         */
+                                         /* rendering                   */
+  };
 
 
 #define AF_LATIN_HINTS_DO_HORZ_SNAP( h )             \
@@ -161,8 +173,8 @@ FT_BEGIN_HEADER
 
 
   /*
-   * The next functions shouldn't normally be exported.  However, other
-   * writing systems might like to use these functions as-is.
+   *  The next functions shouldn't normally be exported.  However, other
+   *  scripts might like to use these functions as-is.
    */
   FT_LOCAL( FT_Error )
   af_latin_hints_compute_segments( AF_GlyphHints  hints,
@@ -170,8 +182,6 @@ FT_BEGIN_HEADER
 
   FT_LOCAL( void )
   af_latin_hints_link_segments( AF_GlyphHints  hints,
-                                FT_UInt        width_count,
-                                AF_WidthRec*   widths,
                                 AF_Dimension   dim );
 
   FT_LOCAL( FT_Error )
@@ -180,15 +190,13 @@ FT_BEGIN_HEADER
 
   FT_LOCAL( FT_Error )
   af_latin_hints_detect_features( AF_GlyphHints  hints,
-                                  FT_UInt        width_count,
-                                  AF_WidthRec*   widths,
                                   AF_Dimension   dim );
 
 /* */
 
 FT_END_HEADER
 
-#endif /* AFLATIN_H_ */
+#endif /* __AFLATIN_H__ */
 
 
 /* END */

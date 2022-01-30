@@ -1,41 +1,41 @@
-/****************************************************************************
- *
- * ttcmap.c
- *
- *   TrueType character mapping table (cmap) support (body).
- *
- * Copyright (C) 2002-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ttcmap.c                                                               */
+/*                                                                         */
+/*    TrueType character mapping table (cmap) support (body).              */
+/*                                                                         */
+/*  Copyright 2002-2010, 2012, 2013 by                                     */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#include <freetype/internal/ftdebug.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
 
-#include "sferrors.h"                      /* must come before `ftvalid.h' */
+#include "sferrors.h"           /* must come before FT_INTERNAL_VALIDATE_H */
 
-#include <freetype/internal/ftvalid.h>
-#include <freetype/internal/ftstream.h>
-#include <freetype/internal/services/svpscmap.h>
+#include FT_INTERNAL_VALIDATE_H
+#include FT_INTERNAL_STREAM_H
 #include "ttload.h"
 #include "ttcmap.h"
-#include "ttpost.h"
+#include "sfntpic.h"
 
 
-  /**************************************************************************
-   *
-   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
-   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
-   * messages during execution.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  ttcmap
+#define FT_COMPONENT  trace_ttcmap
 
 
 #define TT_PEEK_SHORT   FT_PEEK_SHORT
@@ -49,13 +49,6 @@
 #define TT_NEXT_UINT24  FT_NEXT_UOFF3
 #define TT_NEXT_LONG    FT_NEXT_LONG
 #define TT_NEXT_ULONG   FT_NEXT_ULONG
-
-
-  /* Too large glyph index return values are caught in `FT_Get_Char_Index' */
-  /* and `FT_Get_Next_Char' (the latter calls the internal `next' function */
-  /* again in this case).  To mark character code return values as invalid */
-  /* it is sufficient to set the corresponding glyph index return value to */
-  /* zero.                                                                 */
 
 
   FT_CALLBACK_DEF( FT_Error )
@@ -75,19 +68,19 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET         TYPE          DESCRIPTION
-   *
-   *   format      0              USHORT        must be 0
-   *   length      2              USHORT        table length in bytes
-   *   language    4              USHORT        Mac language code
-   *   glyph_ids   6              BYTE[256]     array of glyph indices
-   *               262
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET         TYPE          DESCRIPTION                */
+  /*                                                                       */
+  /*   format      0              USHORT        must be 0                  */
+  /*   length      2              USHORT        table length in bytes      */
+  /*   language    4              USHORT        Mac language code          */
+  /*   glyph_ids   6              BYTE[256]     array of glyph indices     */
+  /*               262                                                     */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_0
 
@@ -95,15 +88,9 @@
   tt_cmap0_validate( FT_Byte*      table,
                      FT_Validator  valid )
   {
-    FT_Byte*  p;
-    FT_UInt   length;
+    FT_Byte*  p      = table + 2;
+    FT_UInt   length = TT_NEXT_USHORT( p );
 
-
-    if ( table + 2 + 2 > valid->limit )
-      FT_INVALID_TOO_SHORT;
-
-    p      = table + 2;           /* skip format */
-    length = TT_NEXT_USHORT( p );
 
     if ( table + length > valid->limit || length < 262 )
       FT_INVALID_TOO_SHORT;
@@ -180,24 +167,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap0_class_rec,
+    sizeof ( TT_CMapRec ),
 
-      sizeof ( TT_CMapRec ),
+    (FT_CMap_InitFunc)     tt_cmap_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap0_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap0_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap_init,         /* init       */
-      (FT_CMap_DoneFunc)     NULL,                 /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap0_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap0_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     0,
-    (TT_CMap_ValidateFunc)tt_cmap0_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap0_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap0_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap0_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_0 */
 
@@ -208,7 +193,7 @@
   /*****                          FORMAT 2                             *****/
   /*****                                                               *****/
   /***** This is used for certain CJK encodings that encode text in a  *****/
-  /***** mixed 8/16 bits encoding along the following lines.           *****/
+  /***** mixed 8/16 bits encoding along the following lines:           *****/
   /*****                                                               *****/
   /***** * Certain byte values correspond to an 8-bit character code   *****/
   /*****   (typically in the range 0..127 for ASCII compatibility).    *****/
@@ -218,75 +203,75 @@
   /*****   second byte of a 2-byte character).                         *****/
   /*****                                                               *****/
   /***** The following charmap lookup and iteration functions all      *****/
-  /***** assume that the value `charcode' fulfills the following.      *****/
+  /***** assume that the value "charcode" correspond to following:     *****/
   /*****                                                               *****/
-  /*****   - For one-byte characters, `charcode' is simply the         *****/
+  /*****   - For one byte characters, "charcode" is simply the         *****/
   /*****     character code.                                           *****/
   /*****                                                               *****/
-  /*****   - For two-byte characters, `charcode' is the 2-byte         *****/
-  /*****     character code in big endian format.  More precisely:     *****/
+  /*****   - For two byte characters, "charcode" is the 2-byte         *****/
+  /*****     character code in big endian format.  More exactly:       *****/
   /*****                                                               *****/
   /*****       (charcode >> 8)    is the first byte value              *****/
   /*****       (charcode & 0xFF)  is the second byte value             *****/
   /*****                                                               *****/
-  /***** Note that not all values of `charcode' are valid according    *****/
-  /***** to these rules, and the function moderately checks the        *****/
+  /***** Note that not all values of "charcode" are valid according    *****/
+  /***** to these rules, and the function moderately check the         *****/
   /***** arguments.                                                    *****/
   /*****                                                               *****/
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET         TYPE            DESCRIPTION
-   *
-   *   format      0              USHORT          must be 2
-   *   length      2              USHORT          table length in bytes
-   *   language    4              USHORT          Mac language code
-   *   keys        6              USHORT[256]     sub-header keys
-   *   subs        518            SUBHEAD[NSUBS]  sub-headers array
-   *   glyph_ids   518+NSUB*8     USHORT[]        glyph ID array
-   *
-   * The `keys' table is used to map charcode high bytes to sub-headers.
-   * The value of `NSUBS' is the number of sub-headers defined in the
-   * table and is computed by finding the maximum of the `keys' table.
-   *
-   * Note that for any `n', `keys[n]' is a byte offset within the `subs'
-   * table, i.e., it is the corresponding sub-header index multiplied
-   * by 8.
-   *
-   * Each sub-header has the following format.
-   *
-   *   NAME        OFFSET      TYPE            DESCRIPTION
-   *
-   *   first       0           USHORT          first valid low-byte
-   *   count       2           USHORT          number of valid low-bytes
-   *   delta       4           SHORT           see below
-   *   offset      6           USHORT          see below
-   *
-   * A sub-header defines, for each high byte, the range of valid
-   * low bytes within the charmap.  Note that the range defined by `first'
-   * and `count' must be completely included in the interval [0..255]
-   * according to the specification.
-   *
-   * If a character code is contained within a given sub-header, then
-   * mapping it to a glyph index is done as follows.
-   *
-   * - The value of `offset' is read.  This is a _byte_ distance from the
-   *   location of the `offset' field itself into a slice of the
-   *   `glyph_ids' table.  Let's call it `slice' (it is a USHORT[], too).
-   *
-   * - The value `slice[char.lo - first]' is read.  If it is 0, there is
-   *   no glyph for the charcode.  Otherwise, the value of `delta' is
-   *   added to it (modulo 65536) to form a new glyph index.
-   *
-   * It is up to the validation routine to check that all offsets fall
-   * within the glyph IDs table (and not within the `subs' table itself or
-   * outside of the CMap).
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET         TYPE            DESCRIPTION              */
+  /*                                                                       */
+  /*   format      0              USHORT          must be 2                */
+  /*   length      2              USHORT          table length in bytes    */
+  /*   language    4              USHORT          Mac language code        */
+  /*   keys        6              USHORT[256]     sub-header keys          */
+  /*   subs        518            SUBHEAD[NSUBS]  sub-headers array        */
+  /*   glyph_ids   518+NSUB*8     USHORT[]        glyph ID array           */
+  /*                                                                       */
+  /* The `keys' table is used to map charcode high-bytes to sub-headers.   */
+  /* The value of `NSUBS' is the number of sub-headers defined in the      */
+  /* table and is computed by finding the maximum of the `keys' table.     */
+  /*                                                                       */
+  /* Note that for any n, `keys[n]' is a byte offset within the `subs'     */
+  /* table, i.e., it is the corresponding sub-header index multiplied      */
+  /* by 8.                                                                 */
+  /*                                                                       */
+  /* Each sub-header has the following format:                             */
+  /*                                                                       */
+  /*   NAME        OFFSET      TYPE            DESCRIPTION                 */
+  /*                                                                       */
+  /*   first       0           USHORT          first valid low-byte        */
+  /*   count       2           USHORT          number of valid low-bytes   */
+  /*   delta       4           SHORT           see below                   */
+  /*   offset      6           USHORT          see below                   */
+  /*                                                                       */
+  /* A sub-header defines, for each high-byte, the range of valid          */
+  /* low-bytes within the charmap.  Note that the range defined by `first' */
+  /* and `count' must be completely included in the interval [0..255]      */
+  /* according to the specification.                                       */
+  /*                                                                       */
+  /* If a character code is contained within a given sub-header, then      */
+  /* mapping it to a glyph index is done as follows:                       */
+  /*                                                                       */
+  /* * The value of `offset' is read.  This is a _byte_ distance from the  */
+  /*   location of the `offset' field itself into a slice of the           */
+  /*   `glyph_ids' table.  Let's call it `slice' (it is a USHORT[] too).   */
+  /*                                                                       */
+  /* * The value `slice[char.lo - first]' is read.  If it is 0, there is   */
+  /*   no glyph for the charcode.  Otherwise, the value of `delta' is      */
+  /*   added to it (modulo 65536) to form a new glyph index.               */
+  /*                                                                       */
+  /* It is up to the validation routine to check that all offsets fall     */
+  /* within the glyph IDs table (and not within the `subs' table itself or */
+  /* outside of the CMap).                                                 */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_2
 
@@ -294,20 +279,13 @@
   tt_cmap2_validate( FT_Byte*      table,
                      FT_Validator  valid )
   {
-    FT_Byte*  p;
-    FT_UInt   length;
-
+    FT_Byte*  p      = table + 2;           /* skip format */
+    FT_UInt   length = TT_PEEK_USHORT( p );
     FT_UInt   n, max_subs;
-    FT_Byte*  keys;        /* keys table     */
-    FT_Byte*  subs;        /* sub-headers    */
-    FT_Byte*  glyph_ids;   /* glyph ID array */
+    FT_Byte*  keys;                         /* keys table */
+    FT_Byte*  subs;                         /* sub-headers */
+    FT_Byte*  glyph_ids;                    /* glyph ID array */
 
-
-    if ( table + 2 + 2 > valid->limit )
-      FT_INVALID_TOO_SHORT;
-
-    p      = table + 2;           /* skip format */
-    length = TT_NEXT_USHORT( p );
 
     if ( table + length > valid->limit || length < 6 + 512 )
       FT_INVALID_TOO_SHORT;
@@ -335,15 +313,16 @@
     FT_ASSERT( p == table + 518 );
 
     subs      = p;
-    glyph_ids = subs + ( max_subs + 1 ) * 8;
+    glyph_ids = subs + (max_subs + 1) * 8;
     if ( glyph_ids > valid->limit )
       FT_INVALID_TOO_SHORT;
 
     /* parse sub-headers */
     for ( n = 0; n <= max_subs; n++ )
     {
-      FT_UInt  first_code, code_count, offset;
-      FT_Int   delta;
+      FT_UInt   first_code, code_count, offset;
+      FT_Int    delta;
+      FT_Byte*  ids;
 
 
       first_code = TT_NEXT_USHORT( p );
@@ -358,18 +337,15 @@
       /* check range within 0..255 */
       if ( valid->level >= FT_VALIDATE_PARANOID )
       {
-        if ( first_code >= 256 || code_count > 256 - first_code )
+        if ( first_code >= 256 || first_code + code_count > 256 )
           FT_INVALID_DATA;
       }
 
       /* check offset */
       if ( offset != 0 )
       {
-        FT_Byte*  ids;
-
-
         ids = p - 2 + offset;
-        if ( ids < glyph_ids || ids + code_count * 2 > table + length )
+        if ( ids < glyph_ids || ids + code_count*2 > table + length )
           FT_INVALID_OFFSET;
 
         /* check glyph IDs */
@@ -384,7 +360,7 @@
             idx = TT_NEXT_USHORT( p );
             if ( idx != 0 )
             {
-              idx = (FT_UInt)( (FT_Int)idx + delta ) & 0xFFFFU;
+              idx = ( idx + delta ) & 0xFFFFU;
               if ( idx >= TT_VALID_GLYPH_COUNT( valid ) )
                 FT_INVALID_GLYPH_ID;
             }
@@ -410,7 +386,7 @@
     {
       FT_UInt   char_lo = (FT_UInt)( char_code & 0xFF );
       FT_UInt   char_hi = (FT_UInt)( char_code >> 8 );
-      FT_Byte*  p       = table + 6;    /* keys table       */
+      FT_Byte*  p       = table + 6;    /* keys table */
       FT_Byte*  subs    = table + 518;  /* subheaders table */
       FT_Byte*  sub;
 
@@ -423,8 +399,8 @@
         sub = subs;  /* jump to first sub-header */
 
         /* check that the sub-header for this byte is 0, which */
-        /* indicates that it is really a valid one-byte value; */
-        /* otherwise, return 0                                 */
+        /* indicates that it is really a valid one-byte value  */
+        /* Otherwise, return 0                                 */
         /*                                                     */
         p += char_lo * 2;
         if ( TT_PEEK_USHORT( p ) != 0 )
@@ -443,10 +419,8 @@
         if ( sub == subs )
           goto Exit;
       }
-
       result = sub;
     }
-
   Exit:
     return result;
   }
@@ -483,10 +457,9 @@
         idx = TT_PEEK_USHORT( p );
 
         if ( idx != 0 )
-          result = (FT_UInt)( (FT_Int)idx + delta ) & 0xFFFFU;
+          result = (FT_UInt)( idx + delta ) & 0xFFFFU;
       }
     }
-
     return result;
   }
 
@@ -516,19 +489,8 @@
         FT_UInt   pos, idx;
 
 
-        if ( char_lo >= start + count && charcode <= 0xFF )
-        {
-          /* this happens only for a malformed cmap */
-          charcode = 0x100;
-          continue;
-        }
-
         if ( offset == 0 )
-        {
-          if ( charcode == 0x100 )
-            goto Exit; /* this happens only for a malformed cmap */
           goto Next_SubHeader;
-        }
 
         if ( char_lo < start )
         {
@@ -547,7 +509,7 @@
 
           if ( idx != 0 )
           {
-            gindex = (FT_UInt)( (FT_Int)idx + delta ) & 0xFFFFU;
+            gindex = ( idx + delta ) & 0xFFFFU;
             if ( gindex != 0 )
             {
               result = charcode;
@@ -555,20 +517,11 @@
             }
           }
         }
-
-        /* if unsuccessful, avoid `charcode' leaving */
-        /* the current 256-character block           */
-        if ( count )
-          charcode--;
       }
 
-      /* If `charcode' is <= 0xFF, retry with `charcode + 1'.      */
-      /* Otherwise jump to the next 256-character block and retry. */
+      /* jump to next sub-header, i.e. higher byte value */
     Next_SubHeader:
-      if ( charcode <= 0xFF )
-        charcode++;
-      else
-        charcode = FT_PAD_FLOOR( charcode, 0x100 ) + 0x100;
+      charcode = FT_PAD_FLOOR( charcode, 256 ) + 256;
     }
 
   Exit:
@@ -594,24 +547,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap2_class_rec,
+    sizeof ( TT_CMapRec ),
 
-      sizeof ( TT_CMapRec ),
+    (FT_CMap_InitFunc)     tt_cmap_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap2_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap2_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap_init,         /* init       */
-      (FT_CMap_DoneFunc)     NULL,                 /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap2_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap2_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     2,
-    (TT_CMap_ValidateFunc)tt_cmap2_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap2_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap2_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap2_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_2 */
 
@@ -624,68 +575,68 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME          OFFSET         TYPE              DESCRIPTION
-   *
-   *   format        0              USHORT            must be 4
-   *   length        2              USHORT            table length
-   *                                                  in bytes
-   *   language      4              USHORT            Mac language code
-   *
-   *   segCountX2    6              USHORT            2*NUM_SEGS
-   *   searchRange   8              USHORT            2*(1 << LOG_SEGS)
-   *   entrySelector 10             USHORT            LOG_SEGS
-   *   rangeShift    12             USHORT            segCountX2 -
-   *                                                    searchRange
-   *
-   *   endCount      14             USHORT[NUM_SEGS]  end charcode for
-   *                                                  each segment; last
-   *                                                  is 0xFFFF
-   *
-   *   pad           14+NUM_SEGS*2  USHORT            padding
-   *
-   *   startCount    16+NUM_SEGS*2  USHORT[NUM_SEGS]  first charcode for
-   *                                                  each segment
-   *
-   *   idDelta       16+NUM_SEGS*4  SHORT[NUM_SEGS]   delta for each
-   *                                                  segment
-   *   idOffset      16+NUM_SEGS*6  SHORT[NUM_SEGS]   range offset for
-   *                                                  each segment; can be
-   *                                                  zero
-   *
-   *   glyphIds      16+NUM_SEGS*8  USHORT[]          array of glyph ID
-   *                                                  ranges
-   *
-   * Character codes are modelled by a series of ordered (increasing)
-   * intervals called segments.  Each segment has start and end codes,
-   * provided by the `startCount' and `endCount' arrays.  Segments must
-   * not overlap, and the last segment should always contain the value
-   * 0xFFFF for `endCount'.
-   *
-   * The fields `searchRange', `entrySelector' and `rangeShift' are better
-   * ignored (they are traces of over-engineering in the TrueType
-   * specification).
-   *
-   * Each segment also has a signed `delta', as well as an optional offset
-   * within the `glyphIds' table.
-   *
-   * If a segment's idOffset is 0, the glyph index corresponding to any
-   * charcode within the segment is obtained by adding the value of
-   * `idDelta' directly to the charcode, modulo 65536.
-   *
-   * Otherwise, a glyph index is taken from the glyph IDs sub-array for
-   * the segment, and the value of `idDelta' is added to it.
-   *
-   *
-   * Finally, note that a lot of fonts contain an invalid last segment,
-   * where `start' and `end' are correctly set to 0xFFFF but both `delta'
-   * and `offset' are incorrect (e.g., `opens___.ttf' which comes with
-   * OpenOffice.org).  We need special code to deal with them correctly.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME          OFFSET         TYPE              DESCRIPTION          */
+  /*                                                                       */
+  /*   format        0              USHORT            must be 4            */
+  /*   length        2              USHORT            table length         */
+  /*                                                  in bytes             */
+  /*   language      4              USHORT            Mac language code    */
+  /*                                                                       */
+  /*   segCountX2    6              USHORT            2*NUM_SEGS           */
+  /*   searchRange   8              USHORT            2*(1 << LOG_SEGS)    */
+  /*   entrySelector 10             USHORT            LOG_SEGS             */
+  /*   rangeShift    12             USHORT            segCountX2 -         */
+  /*                                                    searchRange        */
+  /*                                                                       */
+  /*   endCount      14             USHORT[NUM_SEGS]  end charcode for     */
+  /*                                                  each segment; last   */
+  /*                                                  is 0xFFFF            */
+  /*                                                                       */
+  /*   pad           14+NUM_SEGS*2  USHORT            padding              */
+  /*                                                                       */
+  /*   startCount    16+NUM_SEGS*2  USHORT[NUM_SEGS]  first charcode for   */
+  /*                                                  each segment         */
+  /*                                                                       */
+  /*   idDelta       16+NUM_SEGS*4  SHORT[NUM_SEGS]   delta for each       */
+  /*                                                  segment              */
+  /*   idOffset      16+NUM_SEGS*6  SHORT[NUM_SEGS]   range offset for     */
+  /*                                                  each segment; can be */
+  /*                                                  zero                 */
+  /*                                                                       */
+  /*   glyphIds      16+NUM_SEGS*8  USHORT[]          array of glyph ID    */
+  /*                                                  ranges               */
+  /*                                                                       */
+  /* Character codes are modelled by a series of ordered (increasing)      */
+  /* intervals called segments.  Each segment has start and end codes,     */
+  /* provided by the `startCount' and `endCount' arrays.  Segments must    */
+  /* not overlap, and the last segment should always contain the value     */
+  /* 0xFFFF for `endCount'.                                                */
+  /*                                                                       */
+  /* The fields `searchRange', `entrySelector' and `rangeShift' are better */
+  /* ignored (they are traces of over-engineering in the TrueType          */
+  /* specification).                                                       */
+  /*                                                                       */
+  /* Each segment also has a signed `delta', as well as an optional offset */
+  /* within the `glyphIds' table.                                          */
+  /*                                                                       */
+  /* If a segment's idOffset is 0, the glyph index corresponding to any    */
+  /* charcode within the segment is obtained by adding the value of        */
+  /* `idDelta' directly to the charcode, modulo 65536.                     */
+  /*                                                                       */
+  /* Otherwise, a glyph index is taken from the glyph IDs sub-array for    */
+  /* the segment, and the value of `idDelta' is added to it.               */
+  /*                                                                       */
+  /*                                                                       */
+  /* Finally, note that a lot of fonts contain an invalid last segment,    */
+  /* where `start' and `end' are correctly set to 0xFFFF but both `delta'  */
+  /* and `offset' are incorrect (e.g., `opens___.ttf' which comes with     */
+  /* OpenOffice.org).  We need special code to deal with them correctly.   */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_4
 
@@ -788,9 +739,6 @@
   static void
   tt_cmap4_next( TT_CMap4  cmap )
   {
-    TT_Face   face  = (TT_Face)cmap->cmap.cmap.charmap.face;
-    FT_Byte*  limit = face->cmap_table + face->cmap_size;
-
     FT_UInt  charcode;
 
 
@@ -802,7 +750,7 @@
     if ( charcode < cmap->cur_start )
       charcode = cmap->cur_start;
 
-    for (;;)
+    for ( ;; )
     {
       FT_Byte*  values = cmap->cur_values;
       FT_UInt   end    = cmap->cur_end;
@@ -816,19 +764,15 @@
           FT_Byte*  p = values + 2 * ( charcode - cmap->cur_start );
 
 
-          /* if p > limit, the whole segment is invalid */
-          if ( p > limit )
-            goto Next_Segment;
-
           do
           {
             FT_UInt  gindex = FT_NEXT_USHORT( p );
 
 
-            if ( gindex )
+            if ( gindex != 0 )
             {
-              gindex = (FT_UInt)( (FT_Int)gindex + delta ) & 0xFFFFU;
-              if ( gindex )
+              gindex = (FT_UInt)( ( gindex + delta ) & 0xFFFFU );
+              if ( gindex != 0 )
               {
                 cmap->cur_charcode = charcode;
                 cmap->cur_gindex   = gindex;
@@ -841,29 +785,10 @@
         {
           do
           {
-            FT_UInt  gindex = (FT_UInt)( (FT_Int)charcode + delta ) & 0xFFFFU;
+            FT_UInt  gindex = (FT_UInt)( ( charcode + delta ) & 0xFFFFU );
 
 
-            if ( gindex >= (FT_UInt)face->root.num_glyphs )
-            {
-              /* we have an invalid glyph index; if there is an overflow, */
-              /* we can adjust `charcode', otherwise the whole segment is */
-              /* invalid                                                  */
-              gindex = 0;
-
-              if ( (FT_Int)charcode + delta < 0 &&
-                   (FT_Int)end + delta >= 0     )
-                charcode = (FT_UInt)( -delta );
-
-              else if ( (FT_Int)charcode + delta < 0x10000L &&
-                        (FT_Int)end + delta >= 0x10000L     )
-                charcode = (FT_UInt)( 0x10000L - delta );
-
-              else
-                goto Next_Segment;
-            }
-
-            if ( gindex )
+            if ( gindex != 0 )
             {
               cmap->cur_charcode = charcode;
               cmap->cur_gindex   = gindex;
@@ -873,7 +798,6 @@
         }
       }
 
-    Next_Segment:
       /* we need to find another range */
       if ( tt_cmap4_set_range( cmap, cmap->cur_range + 1 ) < 0 )
         break;
@@ -892,19 +816,15 @@
   tt_cmap4_validate( FT_Byte*      table,
                      FT_Validator  valid )
   {
-    FT_Byte*  p;
-    FT_UInt   length;
-
+    FT_Byte*  p      = table + 2;               /* skip format */
+    FT_UInt   length = TT_NEXT_USHORT( p );
     FT_Byte   *ends, *starts, *offsets, *deltas, *glyph_ids;
     FT_UInt   num_segs;
     FT_Error  error = FT_Err_Ok;
 
 
-    if ( table + 2 + 2 > valid->limit )
+    if ( length < 16 )
       FT_INVALID_TOO_SHORT;
-
-    p      = table + 2;           /* skip format */
-    length = TT_NEXT_USHORT( p );
 
     /* in certain fonts, the `length' field is invalid and goes */
     /* out of bound.  We try to correct this here...            */
@@ -915,19 +835,6 @@
 
       length = (FT_UInt)( valid->limit - table );
     }
-
-    /* it also happens that the `length' field is too small; */
-    /* this is easy to correct                               */
-    if ( length < (FT_UInt)( valid->limit - table ) )
-    {
-      if ( valid->level >= FT_VALIDATE_PARANOID )
-        FT_INVALID_DATA;
-
-      length = (FT_UInt)( valid->limit - table );
-    }
-
-    if ( length < 16 )
-      FT_INVALID_TOO_SHORT;
 
     p        = table + 6;
     num_segs = TT_NEXT_USHORT( p );   /* read segCountX2 */
@@ -1044,7 +951,7 @@
           /* segment if it contains only a single character.     */
           /*                                                     */
           /* We thus omit the test here, delaying it to the      */
-          /* routines that actually access the cmap.             */
+          /* routines which actually access the cmap.            */
           else if ( n != num_segs - 1                       ||
                     !( start == 0xFFFFU && end == 0xFFFFU ) )
           {
@@ -1064,7 +971,7 @@
               idx = FT_NEXT_USHORT( p );
               if ( idx != 0 )
               {
-                idx = (FT_UInt)( (FT_Int)idx + delta ) & 0xFFFFU;
+                idx = (FT_UInt)( idx + delta ) & 0xFFFFU;
 
                 if ( idx >= TT_VALID_GLYPH_COUNT( valid ) )
                   FT_INVALID_GLYPH_ID;
@@ -1097,17 +1004,12 @@
                             FT_UInt32*  pcharcode,
                             FT_Bool     next )
   {
-    TT_Face   face  = (TT_Face)cmap->cmap.charmap.face;
-    FT_Byte*  limit = face->cmap_table + face->cmap_size;
-
-
     FT_UInt    num_segs2, start, end, offset;
     FT_Int     delta;
     FT_UInt    i, num_segs;
     FT_UInt32  charcode = *pcharcode;
     FT_UInt    gindex   = 0;
     FT_Byte*   p;
-    FT_Byte*   q;
 
 
     p = cmap->data + 6;
@@ -1121,106 +1023,65 @@
     if ( next )
       charcode++;
 
-    if ( charcode > 0xFFFFU )
-      return 0;
-
     /* linear search */
-    p = cmap->data + 14;               /* ends table   */
-    q = cmap->data + 16 + num_segs2;   /* starts table */
-
-    for ( i = 0; i < num_segs; i++ )
+    for ( ; charcode <= 0xFFFFU; charcode++ )
     {
-      end   = TT_NEXT_USHORT( p );
-      start = TT_NEXT_USHORT( q );
+      FT_Byte*  q;
 
-      if ( charcode < start )
+
+      p = cmap->data + 14;               /* ends table   */
+      q = cmap->data + 16 + num_segs2;   /* starts table */
+
+      for ( i = 0; i < num_segs; i++ )
       {
-        if ( next )
-          charcode = start;
-        else
-          break;
-      }
+        end   = TT_NEXT_USHORT( p );
+        start = TT_NEXT_USHORT( q );
 
-    Again:
-      if ( charcode <= end )
-      {
-        FT_Byte*  r;
-
-
-        r       = q - 2 + num_segs2;
-        delta   = TT_PEEK_SHORT( r );
-        r      += num_segs2;
-        offset  = TT_PEEK_USHORT( r );
-
-        /* some fonts have an incorrect last segment; */
-        /* we have to catch it                        */
-        if ( i >= num_segs - 1                  &&
-             start == 0xFFFFU && end == 0xFFFFU )
+        if ( charcode >= start && charcode <= end )
         {
-          if ( offset && r + offset + 2 > limit )
+          p       = q - 2 + num_segs2;
+          delta   = TT_PEEK_SHORT( p );
+          p      += num_segs2;
+          offset  = TT_PEEK_USHORT( p );
+
+          /* some fonts have an incorrect last segment; */
+          /* we have to catch it                        */
+          if ( i >= num_segs - 1                  &&
+               start == 0xFFFFU && end == 0xFFFFU )
           {
-            delta  = 1;
-            offset = 0;
+            TT_Face   face  = (TT_Face)cmap->cmap.charmap.face;
+            FT_Byte*  limit = face->cmap_table + face->cmap_size;
+
+
+            if ( offset && p + offset + 2 > limit )
+            {
+              delta  = 1;
+              offset = 0;
+            }
           }
-        }
 
-        if ( offset == 0xFFFFU )
-          continue;
-
-        if ( offset )
-        {
-          r += offset + ( charcode - start ) * 2;
-
-          /* if r > limit, the whole segment is invalid */
-          if ( next && r > limit )
+          if ( offset == 0xFFFFU )
             continue;
 
-          gindex = TT_PEEK_USHORT( r );
-          if ( gindex )
+          if ( offset )
           {
-            gindex = (FT_UInt)( (FT_Int)gindex + delta ) & 0xFFFFU;
-            if ( gindex >= (FT_UInt)face->root.num_glyphs )
-              gindex = 0;
+            p += offset + ( charcode - start ) * 2;
+            gindex = TT_PEEK_USHORT( p );
+            if ( gindex != 0 )
+              gindex = (FT_UInt)( gindex + delta ) & 0xFFFFU;
           }
+          else
+            gindex = (FT_UInt)( charcode + delta ) & 0xFFFFU;
+
+          break;
         }
-        else
-        {
-          gindex = (FT_UInt)( (FT_Int)charcode + delta ) & 0xFFFFU;
-
-          if ( next && gindex >= (FT_UInt)face->root.num_glyphs )
-          {
-            /* we have an invalid glyph index; if there is an overflow, */
-            /* we can adjust `charcode', otherwise the whole segment is */
-            /* invalid                                                  */
-            gindex = 0;
-
-            if ( (FT_Int)charcode + delta < 0 &&
-                 (FT_Int)end + delta >= 0     )
-              charcode = (FT_UInt)( -delta );
-
-            else if ( (FT_Int)charcode + delta < 0x10000L &&
-                      (FT_Int)end + delta >= 0x10000L     )
-              charcode = (FT_UInt)( 0x10000L - delta );
-
-            else
-              continue;
-          }
-        }
-
-        if ( next && !gindex )
-        {
-          if ( charcode >= 0xFFFFU )
-            break;
-
-          charcode++;
-          goto Again;
-        }
-
-        break;
       }
+
+      if ( !next || gindex )
+        break;
     }
 
-    if ( next )
+    if ( next && gindex )
       *pcharcode = charcode;
 
     return gindex;
@@ -1232,9 +1093,6 @@
                             FT_UInt32*  pcharcode,
                             FT_Bool     next )
   {
-    TT_Face   face  = (TT_Face)cmap->cmap.charmap.face;
-    FT_Byte*  limit = face->cmap_table + face->cmap_size;
-
     FT_UInt   num_segs2, start, end, offset;
     FT_Int    delta;
     FT_UInt   max, min, mid, num_segs;
@@ -1286,6 +1144,10 @@
         if ( mid >= num_segs - 1                &&
              start == 0xFFFFU && end == 0xFFFFU )
         {
+          TT_Face   face  = (TT_Face)cmap->cmap.charmap.face;
+          FT_Byte*  limit = face->cmap_table + face->cmap_size;
+
+
           if ( offset && p + offset + 2 > limit )
           {
             delta  = 1;
@@ -1306,7 +1168,7 @@
             mid = max + 1;
 
           /* search in segments before the current segment */
-          for ( i = max; i > 0; i-- )
+          for ( i = max ; i > 0; i-- )
           {
             FT_UInt   prev_end;
             FT_Byte*  old_p;
@@ -1408,39 +1270,12 @@
         if ( offset )
         {
           p += offset + ( charcode - start ) * 2;
-
-          /* if p > limit, the whole segment is invalid */
-          if ( next && p > limit )
-            break;
-
           gindex = TT_PEEK_USHORT( p );
-          if ( gindex )
-          {
-            gindex = (FT_UInt)( (FT_Int)gindex + delta ) & 0xFFFFU;
-            if ( gindex >= (FT_UInt)face->root.num_glyphs )
-              gindex = 0;
-          }
+          if ( gindex != 0 )
+            gindex = (FT_UInt)( gindex + delta ) & 0xFFFFU;
         }
         else
-        {
-          gindex = (FT_UInt)( (FT_Int)charcode + delta ) & 0xFFFFU;
-
-          if ( next && gindex >= (FT_UInt)face->root.num_glyphs )
-          {
-            /* we have an invalid glyph index; if there is an overflow, */
-            /* we can adjust `charcode', otherwise the whole segment is */
-            /* invalid                                                  */
-            gindex = 0;
-
-            if ( (FT_Int)charcode + delta < 0 &&
-                 (FT_Int)end + delta >= 0     )
-              charcode = (FT_UInt)( -delta );
-
-            else if ( (FT_Int)charcode + delta < 0x10000L &&
-                      (FT_Int)end + delta >= 0x10000L     )
-              charcode = (FT_UInt)( 0x10000L - delta );
-          }
-        }
+          gindex = (FT_UInt)( charcode + delta ) & 0xFFFFU;
 
         break;
       }
@@ -1453,6 +1288,7 @@
 
       /* if `charcode' is not in any segment, then `mid' is */
       /* the segment nearest to `charcode'                  */
+      /*                                                    */
 
       if ( charcode > end )
       {
@@ -1551,24 +1387,21 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap4_class_rec,
+    sizeof ( TT_CMap4Rec ),
+    (FT_CMap_InitFunc)     tt_cmap4_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap4_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap4_char_next,
 
-      sizeof ( TT_CMap4Rec ),
-
-      (FT_CMap_InitFunc)     tt_cmap4_init,        /* init       */
-      (FT_CMap_DoneFunc)     NULL,                 /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap4_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap4_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     4,
-    (TT_CMap_ValidateFunc)tt_cmap4_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap4_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap4_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap4_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_4 */
 
@@ -1581,23 +1414,23 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET          TYPE             DESCRIPTION
-   *
-   *   format       0              USHORT           must be 6
-   *   length       2              USHORT           table length in bytes
-   *   language     4              USHORT           Mac language code
-   *
-   *   first        6              USHORT           first segment code
-   *   count        8              USHORT           segment size in chars
-   *   glyphIds     10             USHORT[count]    glyph IDs
-   *
-   * A very simplified segment mapping.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET          TYPE             DESCRIPTION            */
+  /*                                                                       */
+  /*   format       0              USHORT           must be 4              */
+  /*   length       2              USHORT           table length in bytes  */
+  /*   language     4              USHORT           Mac language code      */
+  /*                                                                       */
+  /*   first        6              USHORT           first segment code     */
+  /*   count        8              USHORT           segment size in chars  */
+  /*   glyphIds     10             USHORT[count]    glyph IDs              */
+  /*                                                                       */
+  /* A very simplified segment mapping.                                    */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_6
 
@@ -1656,7 +1489,6 @@
       p += 2 * idx;
       result = TT_PEEK_USHORT( p );
     }
-
     return result;
   }
 
@@ -1677,7 +1509,7 @@
 
 
     if ( char_code >= 0x10000UL )
-      return 0;
+      goto Exit;
 
     if ( char_code < start )
       char_code = start;
@@ -1693,13 +1525,10 @@
         result = char_code;
         break;
       }
-
-      if ( char_code >= 0xFFFFU )
-        return 0;
-
       char_code++;
     }
 
+  Exit:
     *pchar_code = result;
     return gindex;
   }
@@ -1721,24 +1550,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap6_class_rec,
+    sizeof ( TT_CMapRec ),
 
-      sizeof ( TT_CMapRec ),
+    (FT_CMap_InitFunc)     tt_cmap_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap6_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap6_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap_init,         /* init       */
-      (FT_CMap_DoneFunc)     NULL,                 /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap6_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap6_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     6,
-    (TT_CMap_ValidateFunc)tt_cmap6_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap6_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap6_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap6_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_6 */
 
@@ -1753,7 +1580,7 @@
   /*****                                                               *****/
   /***** The purpose of this format is to easily map UTF-16 text to    *****/
   /***** glyph indices.  Basically, the `char_code' must be in one of  *****/
-  /***** the following formats.                                        *****/
+  /***** the following formats:                                        *****/
   /*****                                                               *****/
   /*****   - A 16-bit value that isn't part of the Unicode Surrogates  *****/
   /*****     Area (i.e. U+D800-U+DFFF).                                *****/
@@ -1766,7 +1593,7 @@
   /***** The `is32' table embedded in the charmap indicates whether a  *****/
   /***** given 16-bit value is in the surrogates area or not.          *****/
   /*****                                                               *****/
-  /***** So, for any given `char_code', we can assert the following.   *****/
+  /***** So, for any given `char_code', we can assert the following:   *****/
   /*****                                                               *****/
   /*****   If `char_hi == 0' then we must have `is32[char_lo] == 0'.   *****/
   /*****                                                               *****/
@@ -1776,26 +1603,26 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET         TYPE        DESCRIPTION
-   *
-   *   format      0              USHORT      must be 8
-   *   reserved    2              USHORT      reserved
-   *   length      4              ULONG       length in bytes
-   *   language    8              ULONG       Mac language code
-   *   is32        12             BYTE[8192]  32-bitness bitmap
-   *   count       8204           ULONG       number of groups
-   *
-   * This header is followed by `count' groups of the following format:
-   *
-   *   start       0              ULONG       first charcode
-   *   end         4              ULONG       last charcode
-   *   startId     8              ULONG       start glyph ID for the group
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET         TYPE        DESCRIPTION                  */
+  /*                                                                       */
+  /*   format      0              USHORT      must be 8                    */
+  /*   reserved    2              USHORT      reserved                     */
+  /*   length      4              ULONG       length in bytes              */
+  /*   language    8              ULONG       Mac language code            */
+  /*   is32        12             BYTE[8192]  32-bitness bitmap            */
+  /*   count       8204           ULONG       number of groups             */
+  /*                                                                       */
+  /* This header is followed by `count' groups of the following format:    */
+  /*                                                                       */
+  /*   start       0              ULONG       first charcode               */
+  /*   end         4              ULONG       last charcode                */
+  /*   startId     8              ULONG       start glyph ID for the group */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_8
 
@@ -1820,8 +1647,7 @@
     p          = is32  + 8192;          /* skip `is32' array */
     num_groups = TT_NEXT_ULONG( p );
 
-    /* p + num_groups * 12 > valid->limit ? */
-    if ( num_groups > (FT_UInt32)( valid->limit - p ) / 12 )
+    if ( p + num_groups * 12 > valid->limit )
       FT_INVALID_TOO_SHORT;
 
     /* check groups, they must be in increasing order */
@@ -1846,12 +1672,7 @@
 
         if ( valid->level >= FT_VALIDATE_TIGHT )
         {
-          FT_UInt32  d = end - start;
-
-
-          /* start_id + end - start >= TT_VALID_GLYPH_COUNT( valid ) ? */
-          if ( d > TT_VALID_GLYPH_COUNT( valid )             ||
-               start_id >= TT_VALID_GLYPH_COUNT( valid ) - d )
+          if ( start_id + end - start >= TT_VALID_GLYPH_COUNT( valid ) )
             FT_INVALID_GLYPH_ID;
 
           count = (FT_UInt32)( end - start + 1 );
@@ -1921,10 +1742,7 @@
 
       if ( char_code <= end )
       {
-        if ( start_id > 0xFFFFFFFFUL - ( char_code - start ) )
-          return 0;
-
-        result = (FT_UInt)( start_id + ( char_code - start ) );
+        result = (FT_UInt)( start_id + char_code - start );
         break;
       }
     }
@@ -1936,20 +1754,14 @@
   tt_cmap8_char_next( TT_CMap     cmap,
                       FT_UInt32  *pchar_code )
   {
-    FT_Face    face       = cmap->cmap.charmap.face;
     FT_UInt32  result     = 0;
-    FT_UInt32  char_code;
+    FT_UInt32  char_code  = *pchar_code + 1;
     FT_UInt    gindex     = 0;
     FT_Byte*   table      = cmap->data;
     FT_Byte*   p          = table + 8204;
     FT_UInt32  num_groups = TT_NEXT_ULONG( p );
     FT_UInt32  start, end, start_id;
 
-
-    if ( *pchar_code >= 0xFFFFFFFFUL )
-      return 0;
-
-    char_code = *pchar_code + 1;
 
     p = table + 8208;
 
@@ -1962,38 +1774,18 @@
       if ( char_code < start )
         char_code = start;
 
-    Again:
       if ( char_code <= end )
       {
-        /* ignore invalid group */
-        if ( start_id > 0xFFFFFFFFUL - ( char_code - start ) )
-          continue;
-
-        gindex = (FT_UInt)( start_id + ( char_code - start ) );
-
-        /* does first element of group point to `.notdef' glyph? */
-        if ( gindex == 0 )
+        gindex = (FT_UInt)( char_code - start + start_id );
+        if ( gindex != 0 )
         {
-          if ( char_code >= 0xFFFFFFFFUL )
-            break;
-
-          char_code++;
-          goto Again;
+          result = char_code;
+          goto Exit;
         }
-
-        /* if `gindex' is invalid, the remaining values */
-        /* in this group are invalid, too               */
-        if ( gindex >= (FT_UInt)face->num_glyphs )
-        {
-          gindex = 0;
-          continue;
-        }
-
-        result = char_code;
-        break;
       }
     }
 
+  Exit:
     *pchar_code = result;
     return gindex;
   }
@@ -2015,24 +1807,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap8_class_rec,
+    sizeof ( TT_CMapRec ),
 
-      sizeof ( TT_CMapRec ),
+    (FT_CMap_InitFunc)     tt_cmap_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap8_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap8_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap_init,         /* init       */
-      (FT_CMap_DoneFunc)     NULL,                 /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap8_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap8_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     8,
-    (TT_CMap_ValidateFunc)tt_cmap8_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap8_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap8_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap8_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_8 */
 
@@ -2045,22 +1835,22 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME      OFFSET  TYPE               DESCRIPTION
-   *
-   *   format     0      USHORT             must be 10
-   *   reserved   2      USHORT             reserved
-   *   length     4      ULONG              length in bytes
-   *   language   8      ULONG              Mac language code
-   *
-   *   start     12      ULONG              first char in range
-   *   count     16      ULONG              number of chars in range
-   *   glyphIds  20      USHORT[count]      glyph indices covered
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME      OFFSET  TYPE               DESCRIPTION                    */
+  /*                                                                       */
+  /*   format     0      USHORT             must be 10                     */
+  /*   reserved   2      USHORT             reserved                       */
+  /*   length     4      ULONG              length in bytes                */
+  /*   language   8      ULONG              Mac language code              */
+  /*                                                                       */
+  /*   start     12      ULONG              first char in range            */
+  /*   count     16      ULONG              number of chars in range       */
+  /*   glyphIds  20      USHORT[count]      glyph indices covered          */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_10
 
@@ -2080,9 +1870,7 @@
     count  = TT_NEXT_ULONG( p );
 
     if ( length > (FT_ULong)( valid->limit - table ) ||
-         /* length < 20 + count * 2 ? */
-         length < 20                                 ||
-         ( length - 20 ) / 2 < count                 )
+         length < 20 + count * 2                     )
       FT_INVALID_TOO_SHORT;
 
     /* check glyph indices */
@@ -2112,20 +1900,14 @@
     FT_Byte*   p      = table + 12;
     FT_UInt32  start  = TT_NEXT_ULONG( p );
     FT_UInt32  count  = TT_NEXT_ULONG( p );
-    FT_UInt32  idx;
+    FT_UInt32  idx    = (FT_ULong)( char_code - start );
 
-
-    if ( char_code < start )
-      return 0;
-
-    idx = char_code - start;
 
     if ( idx < count )
     {
       p     += 2 * idx;
       result = TT_PEEK_USHORT( p );
     }
-
     return result;
   }
 
@@ -2135,7 +1917,7 @@
                        FT_UInt32  *pchar_code )
   {
     FT_Byte*   table     = cmap->data;
-    FT_UInt32  char_code;
+    FT_UInt32  char_code = *pchar_code + 1;
     FT_UInt    gindex    = 0;
     FT_Byte*   p         = table + 12;
     FT_UInt32  start     = TT_NEXT_ULONG( p );
@@ -2143,15 +1925,10 @@
     FT_UInt32  idx;
 
 
-    if ( *pchar_code >= 0xFFFFFFFFUL )
-      return 0;
-
-    char_code = *pchar_code + 1;
-
     if ( char_code < start )
       char_code = start;
 
-    idx = char_code - start;
+    idx = (FT_UInt32)( char_code - start );
     p  += 2 * idx;
 
     for ( ; idx < count; idx++ )
@@ -2159,10 +1936,6 @@
       gindex = TT_NEXT_USHORT( p );
       if ( gindex != 0 )
         break;
-
-      if ( char_code >= 0xFFFFFFFFUL )
-        return 0;
-
       char_code++;
     }
 
@@ -2187,24 +1960,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap10_class_rec,
+    sizeof ( TT_CMapRec ),
 
-      sizeof ( TT_CMapRec ),
+    (FT_CMap_InitFunc)     tt_cmap_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap10_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap10_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap_init,          /* init       */
-      (FT_CMap_DoneFunc)     NULL,                  /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap10_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap10_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     10,
-    (TT_CMap_ValidateFunc)tt_cmap10_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap10_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap10_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap10_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_10 */
 
@@ -2217,26 +1988,26 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET     TYPE       DESCRIPTION
-   *
-   *   format      0          USHORT     must be 12
-   *   reserved    2          USHORT     reserved
-   *   length      4          ULONG      length in bytes
-   *   language    8          ULONG      Mac language code
-   *   count       12         ULONG      number of groups
-   *               16
-   *
-   * This header is followed by `count' groups of the following format:
-   *
-   *   start       0          ULONG      first charcode
-   *   end         4          ULONG      last charcode
-   *   startId     8          ULONG      start glyph ID for the group
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET     TYPE       DESCRIPTION                       */
+  /*                                                                       */
+  /*   format      0          USHORT     must be 12                        */
+  /*   reserved    2          USHORT     reserved                          */
+  /*   length      4          ULONG      length in bytes                   */
+  /*   language    8          ULONG      Mac language code                 */
+  /*   count       12         ULONG      number of groups                  */
+  /*               16                                                      */
+  /*                                                                       */
+  /* This header is followed by `count' groups of the following format:    */
+  /*                                                                       */
+  /*   start       0          ULONG      first charcode                    */
+  /*   end         4          ULONG      last charcode                     */
+  /*   startId     8          ULONG      start glyph ID for the group      */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_12
 
@@ -2271,9 +2042,9 @@
   tt_cmap12_validate( FT_Byte*      table,
                       FT_Validator  valid )
   {
-    FT_Byte*  p;
-    FT_ULong  length;
-    FT_ULong  num_groups;
+    FT_Byte*   p;
+    FT_ULong   length;
+    FT_ULong   num_groups;
 
 
     if ( table + 16 > valid->limit )
@@ -2286,9 +2057,7 @@
     num_groups = TT_NEXT_ULONG( p );
 
     if ( length > (FT_ULong)( valid->limit - table ) ||
-         /* length < 16 + 12 * num_groups ? */
-         length < 16                                 ||
-         ( length - 16 ) / 12 < num_groups           )
+         length < 16 + 12 * num_groups               )
       FT_INVALID_TOO_SHORT;
 
     /* check groups, they must be in increasing order */
@@ -2310,12 +2079,7 @@
 
         if ( valid->level >= FT_VALIDATE_TIGHT )
         {
-          FT_UInt32  d = end - start;
-
-
-          /* start_id + end - start >= TT_VALID_GLYPH_COUNT( valid ) ? */
-          if ( d > TT_VALID_GLYPH_COUNT( valid )             ||
-               start_id >= TT_VALID_GLYPH_COUNT( valid ) - d )
+          if ( start_id + end - start >= TT_VALID_GLYPH_COUNT( valid ) )
             FT_INVALID_GLYPH_ID;
         }
 
@@ -2333,7 +2097,6 @@
   static void
   tt_cmap12_next( TT_CMap12  cmap )
   {
-    FT_Face   face = cmap->cmap.cmap.charmap.face;
     FT_Byte*  p;
     FT_ULong  start, end, start_id, char_code;
     FT_ULong  n;
@@ -2345,6 +2108,8 @@
 
     char_code = cmap->cur_charcode + 1;
 
+    n = cmap->cur_group;
+
     for ( n = cmap->cur_group; n < cmap->num_groups; n++ )
     {
       p        = cmap->cmap.data + 16 + 12 * n;
@@ -2355,35 +2120,18 @@
       if ( char_code < start )
         char_code = start;
 
-    Again:
-      if ( char_code <= end )
+      for ( ; char_code <= end; char_code++ )
       {
-        /* ignore invalid group */
-        if ( start_id > 0xFFFFFFFFUL - ( char_code - start ) )
-          continue;
+        gindex = (FT_UInt)( start_id + char_code - start );
 
-        gindex = (FT_UInt)( start_id + ( char_code - start ) );
-
-        /* does first element of group point to `.notdef' glyph? */
-        if ( gindex == 0 )
+        if ( gindex )
         {
-          if ( char_code >= 0xFFFFFFFFUL )
-            goto Fail;
+          cmap->cur_charcode = char_code;;
+          cmap->cur_gindex   = gindex;
+          cmap->cur_group    = n;
 
-          char_code++;
-          goto Again;
+          return;
         }
-
-        /* if `gindex' is invalid, the remaining values */
-        /* in this group are invalid, too               */
-        if ( gindex >= (FT_UInt)face->num_glyphs )
-          continue;
-
-        cmap->cur_charcode = char_code;
-        cmap->cur_gindex   = gindex;
-        cmap->cur_group    = n;
-
-        return;
       }
     }
 
@@ -2413,12 +2161,7 @@
     end = 0xFFFFFFFFUL;
 
     if ( next )
-    {
-      if ( char_code >= 0xFFFFFFFFUL )
-        return 0;
-
       char_code++;
-    }
 
     min = 0;
     max = num_groups;
@@ -2439,24 +2182,20 @@
       else
       {
         start_id = TT_PEEK_ULONG( p );
+        gindex = (FT_UInt)( start_id + char_code - start );
 
-        /* reject invalid glyph index */
-        if ( start_id > 0xFFFFFFFFUL - ( char_code - start ) )
-          gindex = 0;
-        else
-          gindex = (FT_UInt)( start_id + ( char_code - start ) );
         break;
       }
     }
 
     if ( next )
     {
-      FT_Face    face   = cmap->cmap.charmap.face;
       TT_CMap12  cmap12 = (TT_CMap12)cmap;
 
 
       /* if `char_code' is not in any group, then `mid' is */
       /* the group nearest to `char_code'                  */
+      /*                                                   */
 
       if ( char_code > end )
       {
@@ -2469,9 +2208,6 @@
       cmap12->cur_charcode = char_code;
       cmap12->cur_group    = mid;
 
-      if ( gindex >= (FT_UInt)face->num_glyphs )
-        gindex = 0;
-
       if ( !gindex )
       {
         tt_cmap12_next( cmap12 );
@@ -2482,7 +2218,8 @@
       else
         cmap12->cur_gindex = gindex;
 
-      *pchar_code = cmap12->cur_charcode;
+      if ( gindex )
+        *pchar_code = cmap12->cur_charcode;
     }
 
     return gindex;
@@ -2502,8 +2239,11 @@
                        FT_UInt32  *pchar_code )
   {
     TT_CMap12  cmap12 = (TT_CMap12)cmap;
-    FT_UInt    gindex;
+    FT_ULong   gindex;
 
+
+    if ( cmap12->cur_charcode >= 0xFFFFFFFFUL )
+      return 0;
 
     /* no need to search */
     if ( cmap12->valid && cmap12->cur_charcode == *pchar_code )
@@ -2511,8 +2251,11 @@
       tt_cmap12_next( cmap12 );
       if ( cmap12->valid )
       {
-        gindex      = cmap12->cur_gindex;
-        *pchar_code = (FT_UInt32)cmap12->cur_charcode;
+        gindex = cmap12->cur_gindex;
+
+        /* XXX: check cur_charcode overflow is expected */
+        if ( gindex )
+          *pchar_code = (FT_UInt32)cmap12->cur_charcode;
       }
       else
         gindex = 0;
@@ -2520,7 +2263,8 @@
     else
       gindex = tt_cmap12_char_map_binary( cmap, pchar_code, 1 );
 
-    return gindex;
+    /* XXX: check gindex overflow is expected */
+    return (FT_UInt32)gindex;
   }
 
 
@@ -2540,24 +2284,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap12_class_rec,
+    sizeof ( TT_CMap12Rec ),
 
-      sizeof ( TT_CMap12Rec ),
+    (FT_CMap_InitFunc)     tt_cmap12_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap12_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap12_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap12_init,        /* init       */
-      (FT_CMap_DoneFunc)     NULL,                  /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap12_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap12_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     12,
-    (TT_CMap_ValidateFunc)tt_cmap12_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap12_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap12_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap12_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_12 */
 
@@ -2570,26 +2312,26 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME        OFFSET     TYPE       DESCRIPTION
-   *
-   *   format      0          USHORT     must be 13
-   *   reserved    2          USHORT     reserved
-   *   length      4          ULONG      length in bytes
-   *   language    8          ULONG      Mac language code
-   *   count       12         ULONG      number of groups
-   *               16
-   *
-   * This header is followed by `count' groups of the following format:
-   *
-   *   start       0          ULONG      first charcode
-   *   end         4          ULONG      last charcode
-   *   glyphId     8          ULONG      glyph ID for the whole group
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME        OFFSET     TYPE       DESCRIPTION                       */
+  /*                                                                       */
+  /*   format      0          USHORT     must be 13                        */
+  /*   reserved    2          USHORT     reserved                          */
+  /*   length      4          ULONG      length in bytes                   */
+  /*   language    8          ULONG      Mac language code                 */
+  /*   count       12         ULONG      number of groups                  */
+  /*               16                                                      */
+  /*                                                                       */
+  /* This header is followed by `count' groups of the following format:    */
+  /*                                                                       */
+  /*   start       0          ULONG      first charcode                    */
+  /*   end         4          ULONG      last charcode                     */
+  /*   glyphId     8          ULONG      glyph ID for the whole group      */
+  /*                                                                       */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_13
 
@@ -2639,9 +2381,7 @@
     num_groups = TT_NEXT_ULONG( p );
 
     if ( length > (FT_ULong)( valid->limit - table ) ||
-         /* length < 16 + 12 * num_groups ? */
-         length < 16                                 ||
-         ( length - 16 ) / 12 < num_groups           )
+         length < 16 + 12 * num_groups               )
       FT_INVALID_TOO_SHORT;
 
     /* check groups, they must be in increasing order */
@@ -2681,7 +2421,6 @@
   static void
   tt_cmap13_next( TT_CMap13  cmap )
   {
-    FT_Face   face = cmap->cmap.cmap.charmap.face;
     FT_Byte*  p;
     FT_ULong  start, end, glyph_id, char_code;
     FT_ULong  n;
@@ -2692,6 +2431,8 @@
       goto Fail;
 
     char_code = cmap->cur_charcode + 1;
+
+    n = cmap->cur_group;
 
     for ( n = cmap->cur_group; n < cmap->num_groups; n++ )
     {
@@ -2707,9 +2448,9 @@
       {
         gindex = (FT_UInt)glyph_id;
 
-        if ( gindex && gindex < (FT_UInt)face->num_glyphs )
+        if ( gindex )
         {
-          cmap->cur_charcode = char_code;
+          cmap->cur_charcode = char_code;;
           cmap->cur_gindex   = gindex;
           cmap->cur_group    = n;
 
@@ -2744,12 +2485,7 @@
     end = 0xFFFFFFFFUL;
 
     if ( next )
-    {
-      if ( char_code >= 0xFFFFFFFFUL )
-        return 0;
-
       char_code++;
-    }
 
     min = 0;
     max = num_groups;
@@ -2777,7 +2513,6 @@
 
     if ( next )
     {
-      FT_Face    face   = cmap->cmap.charmap.face;
       TT_CMap13  cmap13 = (TT_CMap13)cmap;
 
 
@@ -2795,9 +2530,6 @@
       cmap13->cur_charcode = char_code;
       cmap13->cur_group    = mid;
 
-      if ( gindex >= (FT_UInt)face->num_glyphs )
-        gindex = 0;
-
       if ( !gindex )
       {
         tt_cmap13_next( cmap13 );
@@ -2808,7 +2540,8 @@
       else
         cmap13->cur_gindex = gindex;
 
-      *pchar_code = cmap13->cur_charcode;
+      if ( gindex )
+        *pchar_code = cmap13->cur_charcode;
     }
 
     return gindex;
@@ -2831,14 +2564,18 @@
     FT_UInt    gindex;
 
 
+    if ( cmap13->cur_charcode >= 0xFFFFFFFFUL )
+      return 0;
+
     /* no need to search */
     if ( cmap13->valid && cmap13->cur_charcode == *pchar_code )
     {
       tt_cmap13_next( cmap13 );
       if ( cmap13->valid )
       {
-        gindex      = cmap13->cur_gindex;
-        *pchar_code = cmap13->cur_charcode;
+        gindex = cmap13->cur_gindex;
+        if ( gindex )
+          *pchar_code = cmap13->cur_charcode;
       }
       else
         gindex = 0;
@@ -2866,24 +2603,22 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap13_class_rec,
+    sizeof ( TT_CMap13Rec ),
 
-      sizeof ( TT_CMap13Rec ),
+    (FT_CMap_InitFunc)     tt_cmap13_init,
+    (FT_CMap_DoneFunc)     NULL,
+    (FT_CMap_CharIndexFunc)tt_cmap13_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap13_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap13_init,        /* init       */
-      (FT_CMap_DoneFunc)     NULL,                  /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap13_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap13_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 
     13,
-    (TT_CMap_ValidateFunc)tt_cmap13_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap13_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap13_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap13_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_13 */
 
@@ -2896,59 +2631,58 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /**************************************************************************
-   *
-   * TABLE OVERVIEW
-   * --------------
-   *
-   *   NAME         OFFSET  TYPE    DESCRIPTION
-   *
-   *   format         0     USHORT  must be 14
-   *   length         2     ULONG   table length in bytes
-   *   numSelector    6     ULONG   number of variation sel. records
-   *
-   * Followed by numSelector records, each of which looks like
-   *
-   *   varSelector    0     UINT24  Unicode codepoint of sel.
-   *   defaultOff     3     ULONG   offset to a default UVS table
-   *                                describing any variants to be found in
-   *                                the normal Unicode subtable.
-   *   nonDefOff      7     ULONG   offset to a non-default UVS table
-   *                                describing any variants not in the
-   *                                standard cmap, with GIDs here
-   * (either offset may be 0 NULL)
-   *
-   * Selectors are sorted by code point.
-   *
-   * A default Unicode Variation Selector (UVS) subtable is just a list of
-   * ranges of code points which are to be found in the standard cmap.  No
-   * glyph IDs (GIDs) here.
-   *
-   *   numRanges      0     ULONG   number of ranges following
-   *
-   * A range looks like
-   *
-   *   uniStart       0     UINT24  code point of the first character in
-   *                                this range
-   *   additionalCnt  3     UBYTE   count of additional characters in this
-   *                                range (zero means a range of a single
-   *                                character)
-   *
-   * Ranges are sorted by `uniStart'.
-   *
-   * A non-default Unicode Variation Selector (UVS) subtable is a list of
-   * mappings from codepoint to GID.
-   *
-   *   numMappings    0     ULONG   number of mappings
-   *
-   * A range looks like
-   *
-   *   uniStart       0     UINT24  code point of the first character in
-   *                                this range
-   *   GID            3     USHORT  and its GID
-   *
-   * Ranges are sorted by `uniStart'.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* TABLE OVERVIEW                                                        */
+  /* --------------                                                        */
+  /*                                                                       */
+  /*   NAME         OFFSET  TYPE    DESCRIPTION                            */
+  /*                                                                       */
+  /*   format         0     USHORT  must be 14                             */
+  /*   length         2     ULONG   table length in bytes                  */
+  /*   numSelector    6     ULONG   number of variation sel. records       */
+  /*                                                                       */
+  /* Followed by numSelector records, each of which looks like             */
+  /*                                                                       */
+  /*   varSelector    0     UINT24  Unicode codepoint of sel.              */
+  /*   defaultOff     3     ULONG   offset to a default UVS table          */
+  /*                                describing any variants to be found in */
+  /*                                the normal Unicode subtable.           */
+  /*   nonDefOff      7     ULONG   offset to a non-default UVS table      */
+  /*                                describing any variants not in the     */
+  /*                                standard cmap, with GIDs here          */
+  /* (either offset may be 0 NULL)                                         */
+  /*                                                                       */
+  /* Selectors are sorted by code point.                                   */
+  /*                                                                       */
+  /* A default Unicode Variation Selector (UVS) subtable is just a list of */
+  /* ranges of code points which are to be found in the standard cmap.  No */
+  /* glyph IDs (GIDs) here.                                                */
+  /*                                                                       */
+  /*   numRanges      0     ULONG   number of ranges following             */
+  /*                                                                       */
+  /* A range looks like                                                    */
+  /*                                                                       */
+  /*   uniStart       0     UINT24  code point of the first character in   */
+  /*                                this range                             */
+  /*   additionalCnt  3     UBYTE   count of additional characters in this */
+  /*                                range (zero means a range of a single  */
+  /*                                character)                             */
+  /*                                                                       */
+  /* Ranges are sorted by `uniStart'.                                      */
+  /*                                                                       */
+  /* A non-default Unicode Variation Selector (UVS) subtable is a list of  */
+  /* mappings from codepoint to GID.                                       */
+  /*                                                                       */
+  /*   numMappings    0     ULONG   number of mappings                     */
+  /*                                                                       */
+  /* A range looks like                                                    */
+  /*                                                                       */
+  /*   uniStart       0     UINT24  code point of the first character in   */
+  /*                                this range                             */
+  /*   GID            3     USHORT  and its GID                            */
+  /*                                                                       */
+  /* Ranges are sorted by `uniStart'.                                      */
 
 #ifdef TT_CONFIG_CMAP_FORMAT_14
 
@@ -2975,7 +2709,7 @@
 
 
     cmap->max_results = 0;
-    if ( memory && cmap->results )
+    if ( memory != NULL && cmap->results != NULL )
       FT_FREE( cmap->results );
   }
 
@@ -3022,22 +2756,13 @@
   tt_cmap14_validate( FT_Byte*      table,
                       FT_Validator  valid )
   {
-    FT_Byte*  p;
-    FT_ULong  length;
-    FT_ULong  num_selectors;
+    FT_Byte*  p             = table + 2;
+    FT_ULong  length        = TT_NEXT_ULONG( p );
+    FT_ULong  num_selectors = TT_NEXT_ULONG( p );
 
-
-    if ( table + 2 + 4 + 4 > valid->limit )
-      FT_INVALID_TOO_SHORT;
-
-    p             = table + 2;
-    length        = TT_NEXT_ULONG( p );
-    num_selectors = TT_NEXT_ULONG( p );
 
     if ( length > (FT_ULong)( valid->limit - table ) ||
-         /* length < 10 + 11 * num_selectors ? */
-         length < 10                                 ||
-         ( length - 10 ) / 11 < num_selectors        )
+         length < 10 + 11 * num_selectors            )
       FT_INVALID_TOO_SHORT;
 
     /* check selectors, they must be in increasing order */
@@ -3067,22 +2792,16 @@
         /* through the normal Unicode cmap, no GIDs, just check order) */
         if ( defOff != 0 )
         {
-          FT_Byte*  defp     = table + defOff;
-          FT_ULong  numRanges;
+          FT_Byte*  defp      = table + defOff;
+          FT_ULong  numRanges = TT_NEXT_ULONG( defp );
           FT_ULong  i;
-          FT_ULong  lastBase = 0;
+          FT_ULong  lastBase  = 0;
 
 
-          if ( defp + 4 > valid->limit )
+          if ( defp + numRanges * 4 > valid->limit )
             FT_INVALID_TOO_SHORT;
 
-          numRanges = TT_NEXT_ULONG( defp );
-
-          /* defp + numRanges * 4 > valid->limit ? */
-          if ( numRanges > (FT_ULong)( valid->limit - defp ) / 4 )
-            FT_INVALID_TOO_SHORT;
-
-          for ( i = 0; i < numRanges; i++ )
+          for ( i = 0; i < numRanges; ++i )
           {
             FT_ULong  base = TT_NEXT_UINT24( defp );
             FT_ULong  cnt  = FT_NEXT_BYTE( defp );
@@ -3101,21 +2820,15 @@
         /* and the non-default table (these glyphs are specified here) */
         if ( nondefOff != 0 )
         {
-          FT_Byte*  ndp        = table + nondefOff;
-          FT_ULong  numMappings;
-          FT_ULong  i, lastUni = 0;
+          FT_Byte*  ndp         = table + nondefOff;
+          FT_ULong  numMappings = TT_NEXT_ULONG( ndp );
+          FT_ULong  i, lastUni  = 0;
 
 
-          if ( ndp + 4 > valid->limit )
+          if ( numMappings * 4 > (FT_ULong)( valid->limit - ndp ) )
             FT_INVALID_TOO_SHORT;
 
-          numMappings = TT_NEXT_ULONG( ndp );
-
-          /* numMappings * 5 > (FT_ULong)( valid->limit - ndp ) ? */
-          if ( numMappings > ( (FT_ULong)( valid->limit - ndp ) ) / 5 )
-            FT_INVALID_TOO_SHORT;
-
-          for ( i = 0; i < numMappings; i++ )
+          for ( i = 0; i < numMappings; ++i )
           {
             FT_ULong  uni = TT_NEXT_UINT24( ndp );
             FT_ULong  gid = TT_NEXT_USHORT( ndp );
@@ -3203,7 +2916,7 @@
 
       if ( char_code < start )
         max = mid;
-      else if ( char_code > start + cnt )
+      else if ( char_code > start+cnt )
         min = mid + 1;
       else
         return TRUE;
@@ -3356,7 +3069,7 @@
       return NULL;
 
     result = cmap14->results;
-    for ( i = 0; i < count; i++ )
+    for ( i = 0; i < count; ++i )
     {
       result[i] = (FT_UInt32)TT_NEXT_UINT24( p );
       p        += 8;
@@ -3381,7 +3094,7 @@
     if ( tt_cmap14_ensure( cmap14, ( count + 1 ), memory ) )
       return NULL;
 
-    for ( q = cmap14->results; count > 0; count-- )
+    for ( q = cmap14->results; count > 0; --count )
     {
       FT_UInt32  varSel    = TT_NEXT_UINT24( p );
       FT_ULong   defOff    = TT_NEXT_ULONG( p );
@@ -3440,7 +3153,7 @@
     if ( tt_cmap14_ensure( cmap14, ( cnt + 1 ), memory ) )
       return NULL;
 
-    for ( q = cmap14->results; numRanges > 0; numRanges-- )
+    for ( q = cmap14->results; numRanges > 0; --numRanges )
     {
       FT_UInt32  uni = (FT_UInt32)TT_NEXT_UINT24( p );
 
@@ -3477,7 +3190,7 @@
       return NULL;
 
     ret = cmap14->results;
-    for ( i = 0; i < numMappings; i++ )
+    for ( i = 0; i < numMappings; ++i )
     {
       ret[i] = (FT_UInt32)TT_NEXT_UINT24( p );
       p += 2;
@@ -3495,6 +3208,7 @@
   {
     FT_Byte    *p  = tt_cmap14_find_variant( cmap->data + 6,
                                              variantSelector );
+    FT_UInt32  *ret;
     FT_Int      i;
     FT_ULong    defOff;
     FT_ULong    nondefOff;
@@ -3528,8 +3242,6 @@
       FT_Byte*   dp;
       FT_UInt    di, ni, k;
 
-      FT_UInt32  *ret;
-
 
       p  = cmap->data + nondefOff;
       dp = cmap->data + defOff;
@@ -3557,14 +3269,14 @@
       ni   = 1;
       i    = 0;
 
-      for (;;)
+      for ( ;; )
       {
         if ( nuni > duni + dcnt )
         {
-          for ( k = 0; k <= dcnt; k++ )
+          for ( k = 0; k <= dcnt; ++k )
             ret[i++] = duni + k;
 
-          di++;
+          ++di;
 
           if ( di > numRanges )
             break;
@@ -3578,7 +3290,7 @@
             ret[i++] = nuni;
           /* If it is within the default range then ignore it -- */
           /* that should not have happened                       */
-          ni++;
+          ++ni;
           if ( ni > numMappings )
             break;
 
@@ -3597,7 +3309,7 @@
         {
           ret[i++] = (FT_UInt32)TT_NEXT_UINT24( p );
           p += 2;
-          ni++;
+          ++ni;
         }
       }
       else if ( di <= numRanges )
@@ -3605,7 +3317,7 @@
         /* If we get here then we have run out of all non-default     */
         /* mappings.  We have read one default range which we haven't */
         /* stored and there may be others that need to be read.       */
-        for ( k = 0; k <= dcnt; k++ )
+        for ( k = 0; k <= dcnt; ++k )
           ret[i++] = duni + k;
 
         while ( di < numRanges )
@@ -3613,9 +3325,9 @@
           duni = (FT_UInt32)TT_NEXT_UINT24( dp );
           dcnt = FT_NEXT_BYTE( dp );
 
-          for ( k = 0; k <= dcnt; k++ )
+          for ( k = 0; k <= dcnt; ++k )
             ret[i++] = duni + k;
-          di++;
+          ++di;
         }
       }
 
@@ -3628,144 +3340,90 @@
 
   FT_DEFINE_TT_CMAP(
     tt_cmap14_class_rec,
+    sizeof ( TT_CMap14Rec ),
 
-      sizeof ( TT_CMap14Rec ),
+    (FT_CMap_InitFunc)     tt_cmap14_init,
+    (FT_CMap_DoneFunc)     tt_cmap14_done,
+    (FT_CMap_CharIndexFunc)tt_cmap14_char_index,
+    (FT_CMap_CharNextFunc) tt_cmap14_char_next,
 
-      (FT_CMap_InitFunc)     tt_cmap14_init,        /* init       */
-      (FT_CMap_DoneFunc)     tt_cmap14_done,        /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap14_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap14_char_next,   /* char_next  */
-
-      /* Format 14 extension functions */
-      (FT_CMap_CharVarIndexFunc)    tt_cmap14_char_var_index,
-      (FT_CMap_CharVarIsDefaultFunc)tt_cmap14_char_var_isdefault,
-      (FT_CMap_VariantListFunc)     tt_cmap14_variants,
-      (FT_CMap_CharVariantListFunc) tt_cmap14_char_variants,
-      (FT_CMap_VariantCharListFunc) tt_cmap14_variant_chars,
+    /* Format 14 extension functions */
+    (FT_CMap_CharVarIndexFunc)    tt_cmap14_char_var_index,
+    (FT_CMap_CharVarIsDefaultFunc)tt_cmap14_char_var_isdefault,
+    (FT_CMap_VariantListFunc)     tt_cmap14_variants,
+    (FT_CMap_CharVariantListFunc) tt_cmap14_char_variants,
+    (FT_CMap_VariantCharListFunc) tt_cmap14_variant_chars,
 
     14,
-    (TT_CMap_ValidateFunc)tt_cmap14_validate,  /* validate      */
-    (TT_CMap_Info_GetFunc)tt_cmap14_get_info   /* get_cmap_info */
-  )
+    (TT_CMap_ValidateFunc)tt_cmap14_validate,
+    (TT_CMap_Info_GetFunc)tt_cmap14_get_info )
 
 #endif /* TT_CONFIG_CMAP_FORMAT_14 */
 
 
-  /*************************************************************************/
-  /*************************************************************************/
-  /*****                                                               *****/
-  /*****                       SYNTHETIC UNICODE                       *****/
-  /*****                                                               *****/
-  /*************************************************************************/
-  /*************************************************************************/
-
-  /*        This charmap is generated using postscript glyph names.        */
-
-#ifdef FT_CONFIG_OPTION_POSTSCRIPT_NAMES
-
-  FT_CALLBACK_DEF( const char * )
-  tt_get_glyph_name( TT_Face  face,
-                     FT_UInt  idx )
-  {
-    FT_String*  PSname = NULL;
-
-
-    tt_face_get_ps_name( face, idx, &PSname );
-
-    return PSname;
-  }
-
-
-  FT_CALLBACK_DEF( FT_Error )
-  tt_cmap_unicode_init( PS_Unicodes  unicodes,
-                        FT_Pointer   pointer )
-  {
-    TT_Face             face    = (TT_Face)FT_CMAP_FACE( unicodes );
-    FT_Memory           memory  = FT_FACE_MEMORY( face );
-    FT_Service_PsCMaps  psnames = (FT_Service_PsCMaps)face->psnames;
-
-    FT_UNUSED( pointer );
-
-
-    if ( !psnames->unicodes_init )
-      return FT_THROW( Unimplemented_Feature );
-
-    return psnames->unicodes_init( memory,
-                                   unicodes,
-                                   face->root.num_glyphs,
-                                   (PS_GetGlyphNameFunc)&tt_get_glyph_name,
-                                   (PS_FreeGlyphNameFunc)NULL,
-                                   (FT_Pointer)face );
-  }
-
-
-  FT_CALLBACK_DEF( void )
-  tt_cmap_unicode_done( PS_Unicodes  unicodes )
-  {
-    FT_Face    face   = FT_CMAP_FACE( unicodes );
-    FT_Memory  memory = FT_FACE_MEMORY( face );
-
-
-    FT_FREE( unicodes->maps );
-    unicodes->num_maps = 0;
-  }
-
-
-  FT_CALLBACK_DEF( FT_UInt )
-  tt_cmap_unicode_char_index( PS_Unicodes  unicodes,
-                              FT_UInt32    char_code )
-  {
-    TT_Face             face    = (TT_Face)FT_CMAP_FACE( unicodes );
-    FT_Service_PsCMaps  psnames = (FT_Service_PsCMaps)face->psnames;
-
-
-    return psnames->unicodes_char_index( unicodes, char_code );
-  }
-
-
-  FT_CALLBACK_DEF( FT_UInt32 )
-  tt_cmap_unicode_char_next( PS_Unicodes  unicodes,
-                             FT_UInt32   *pchar_code )
-  {
-    TT_Face             face    = (TT_Face)FT_CMAP_FACE( unicodes );
-    FT_Service_PsCMaps  psnames = (FT_Service_PsCMaps)face->psnames;
-
-
-    return psnames->unicodes_char_next( unicodes, pchar_code );
-  }
-
-
-  FT_DEFINE_TT_CMAP(
-    tt_cmap_unicode_class_rec,
-
-      sizeof ( PS_UnicodesRec ),
-
-      (FT_CMap_InitFunc)     tt_cmap_unicode_init,        /* init       */
-      (FT_CMap_DoneFunc)     tt_cmap_unicode_done,        /* done       */
-      (FT_CMap_CharIndexFunc)tt_cmap_unicode_char_index,  /* char_index */
-      (FT_CMap_CharNextFunc) tt_cmap_unicode_char_next,   /* char_next  */
-
-      (FT_CMap_CharVarIndexFunc)    NULL,  /* char_var_index   */
-      (FT_CMap_CharVarIsDefaultFunc)NULL,  /* char_var_default */
-      (FT_CMap_VariantListFunc)     NULL,  /* variant_list     */
-      (FT_CMap_CharVariantListFunc) NULL,  /* charvariant_list */
-      (FT_CMap_VariantCharListFunc) NULL,  /* variantchar_list */
-
-    ~0U,
-    (TT_CMap_ValidateFunc)NULL,  /* validate      */
-    (TT_CMap_Info_GetFunc)NULL   /* get_cmap_info */
-  )
-
-#endif /* FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
-
+#ifndef FT_CONFIG_OPTION_PIC
 
   static const TT_CMap_Class  tt_cmap_classes[] =
   {
-#undef  TTCMAPCITEM
 #define TTCMAPCITEM( a )  &a,
 #include "ttcmapc.h"
     NULL,
   };
+
+#else /*FT_CONFIG_OPTION_PIC*/
+
+  void
+  FT_Destroy_Class_tt_cmap_classes( FT_Library      library,
+                                    TT_CMap_Class*  clazz )
+  {
+    FT_Memory  memory = library->memory;
+
+
+    if ( clazz )
+      FT_FREE( clazz );
+  }
+
+
+  FT_Error
+  FT_Create_Class_tt_cmap_classes( FT_Library       library,
+                                   TT_CMap_Class**  output_class )
+  {
+    TT_CMap_Class*     clazz  = NULL;
+    TT_CMap_ClassRec*  recs;
+    FT_Error           error;
+    FT_Memory          memory = library->memory;
+
+    int  i = 0;
+
+
+#define TTCMAPCITEM( a ) i++;
+#include "ttcmapc.h"
+
+    /* allocate enough space for both the pointers */
+    /* plus terminator and the class instances     */
+    if ( FT_ALLOC( clazz, sizeof ( *clazz ) * ( i + 1 ) +
+                          sizeof ( TT_CMap_ClassRec ) * i ) )
+      return error;
+
+    /* the location of the class instances follows the array of pointers */
+    recs = (TT_CMap_ClassRec*)( (char*)clazz +
+                                sizeof ( *clazz ) * ( i + 1 ) );
+    i    = 0;
+
+#undef TTCMAPCITEM
+#define  TTCMAPCITEM( a )             \
+    FT_Init_Class_ ## a( &recs[i] );  \
+    clazz[i] = &recs[i];              \
+    i++;
+#include "ttcmapc.h"
+
+    clazz[i] = NULL;
+
+    *output_class = clazz;
+    return FT_Err_Ok;
+  }
+
+#endif /*FT_CONFIG_OPTION_PIC*/
 
 
   /* parse the `cmap' table and build the corresponding TT_CMap objects */
@@ -3774,33 +3432,38 @@
   FT_LOCAL_DEF( FT_Error )
   tt_face_build_cmaps( TT_Face  face )
   {
-    FT_Byte* const     table   = face->cmap_table;
-    FT_Byte*           limit;
+    FT_Byte*           table = face->cmap_table;
+    FT_Byte*           limit = table + face->cmap_size;
     FT_UInt volatile   num_cmaps;
-    FT_Byte* volatile  p       = table;
+    FT_Byte* volatile  p     = table;
     FT_Library         library = FT_FACE_LIBRARY( face );
 
     FT_UNUSED( library );
 
 
-    if ( !p || face->cmap_size < 4 )
+    if ( !p || p + 4 > limit )
       return FT_THROW( Invalid_Table );
 
-    /* Version 1.8.3 of the OpenType specification contains the following */
-    /* (https://docs.microsoft.com/en-us/typography/opentype/spec/cmap):  */
-    /*                                                                    */
-    /*   The 'cmap' table version number remains at 0x0000 for fonts that */
-    /*   make use of the newer subtable formats.                          */
-    /*                                                                    */
-    /* This essentially means that a version format test is useless.      */
-
-    /* ignore format */
-    p += 2;
+    /* only recognize format 0 */
+    if ( TT_NEXT_USHORT( p ) != 0 )
+    {
+      p -= 2;
+      FT_ERROR(( "tt_face_build_cmaps:"
+                 " unsupported `cmap' table format = %d\n",
+                 TT_PEEK_USHORT( p ) ));
+      return FT_THROW( Invalid_Table );
+    }
 
     num_cmaps = TT_NEXT_USHORT( p );
-    FT_TRACE4(( "tt_face_build_cmaps: %d cmaps\n", num_cmaps ));
 
-    limit = table + face->cmap_size;
+#ifdef FT_MAX_CHARMAP_CACHEABLE
+    if ( num_cmaps > FT_MAX_CHARMAP_CACHEABLE )
+      FT_ERROR(( "tt_face_build_cmaps: too many cmap subtables (%d)\n"
+                 "                     subtable #%d and higher are loaded"
+                 "                     but cannot be searched\n",
+                 num_cmaps, FT_MAX_CHARMAP_CACHEABLE + 1 ));
+#endif
+
     for ( ; num_cmaps > 0 && p + 8 <= limit; num_cmaps-- )
     {
       FT_CharMapRec  charmap;
@@ -3817,7 +3480,7 @@
       {
         FT_Byte* volatile              cmap   = table + offset;
         volatile FT_UInt               format = TT_PEEK_USHORT( cmap );
-        const TT_CMap_Class* volatile  pclazz = tt_cmap_classes;
+        const TT_CMap_Class* volatile  pclazz = TT_CMAP_CLASSES_GET;
         TT_CMap_Class volatile         clazz;
 
 
@@ -3841,7 +3504,7 @@
               error = clazz->validate( cmap, FT_VALIDATOR( &valid ) );
             }
 
-            if ( !valid.validator.error )
+            if ( valid.validator.error == 0 )
             {
               FT_CMap  ttcmap;
 
@@ -3867,7 +3530,7 @@
           }
         }
 
-        if ( !*pclazz )
+        if ( *pclazz == NULL )
         {
           FT_TRACE0(( "tt_face_build_cmaps:"
                       " unsupported cmap sub-table ignored\n" ));
@@ -3886,10 +3549,8 @@
     FT_CMap        cmap  = (FT_CMap)charmap;
     TT_CMap_Class  clazz = (TT_CMap_Class)cmap->clazz;
 
-    if ( clazz->get_cmap_info )
-      return clazz->get_cmap_info( charmap, cmap_info );
-    else
-      return FT_THROW( Invalid_CharMap_Format );
+
+    return clazz->get_cmap_info( charmap, cmap_info );
   }
 
 

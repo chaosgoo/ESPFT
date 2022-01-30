@@ -1,7 +1,7 @@
-This document contains instructions how  to build the FreeType library
-on non-Unix systems with  the help of GNU Make.  Note  that if you are
-running  Cygwin  or  MinGW/MSYS  in Windows,  you  should  follow  the
-instructions in the file `INSTALL.UNIX' instead.
+This document contains instructions  how to build the FreeType library
+on non-Unix systems  with the help of GNU Make.  Note  that if you are
+running Cygwin or MSys in  Windows, you should follow the instructions
+in the file INSTALL.UNIX instead.
 
 
   FreeType 2 includes a powerful and flexible build system that allows
@@ -10,6 +10,9 @@ instructions in the file `INSTALL.UNIX' instead.
 
   1. Install GNU Make
   -------------------
+
+    Because  GNU Make  is  the  only Make  tool  supported to  compile
+    FreeType 2, you should install it on your machine.
 
     The FreeType 2 build system relies on many features special to GNU
     Make.
@@ -20,9 +23,9 @@ instructions in the file `INSTALL.UNIX' instead.
     Note that  make++, a  make tool written  in Perl,  supports enough
     features of GNU make to compile FreeType.  See
 
-      https://makepp.sourceforge.net
+      http://makepp.sourceforge.net
 
-    for more information;  you need version 2.0 or newer, and you must
+    for more information; you need version 1.19 or newer, and you must
     pass option `--norc-substitution'.
 
     Make sure that you are invoking GNU Make from the command line, by
@@ -32,7 +35,7 @@ instructions in the file `INSTALL.UNIX' instead.
 
     to display its version number.
 
-    VERSION 3.81 OR NEWER IS NEEDED!
+    VERSION 3.80 OR NEWER IS NEEDED!
 
 
   2. Invoke `make'
@@ -49,10 +52,10 @@ instructions in the file `INSTALL.UNIX' instead.
 
       The following settings are used:
 
-        platform                     windows
+        platform                     win32
         compiler                     gcc
-        configuration directory      .\builds\windows
-        configuration rules          .\builds\windows\w32-gcc.mk
+        configuration directory      .\builds\win32
+        configuration rules          .\builds\win32\w32-gcc.mk
 
       If this does not correspond to your system or settings please
       remove the file 'config.mk' from this directory then read the
@@ -60,7 +63,7 @@ instructions in the file `INSTALL.UNIX' instead.
 
       Otherwise, simply type 'make' again to build the library
       or 'make refdoc' to build the API reference (the latter needs
-      Python >= 3.5).
+      python).
       =============================================================
 
 
@@ -97,28 +100,6 @@ instructions in the file `INSTALL.UNIX' instead.
     step 5.
 
 
-  3a. Use clang instead of gcc
-  ----------------------------
-
-    The `clang'  compiler can  use FreeType's setup  for `gcc';  it is
-    sufficient to set the `CC' variable, for example
-
-      make CC=clang
-
-
-  3b. Compiling with a C++ compiler
-  ---------------------------------
-
-    FreeType can be built with a C++ compiler, for example
-
-      make CC="g++"
-
-    If `clang++' should  be used it is necessary to  also override the
-    `ANSIFLAGS' variable:
-
-      make CC="clang++" ANSIFLAGS=""
-
-
   4. Configure the build system for an unknown platform/compiler
   --------------------------------------------------------------
 
@@ -152,23 +133,20 @@ instructions in the file `INSTALL.UNIX' instead.
 
     To  launch  the build,  simply  invoke  GNU  Make again:  The  top
     Makefile will detect the configuration file and run the build with
-    it.  If you have used variables in  step 3, you must use  the same
-    variables here, too.
+    it.
 
 
   Final note
 
-    The above instructions build a  _statically_ linked library of the
-    font engine in the `objs' directory.   On Windows, you can build a
-    DLL  either  with  MinGW  (within an  MSYS  shell,  following  the
-    instructions in `INSTALL.UNIX'), or you  use one of the Visual C++
-    project files; see  the  subdirectories  of `builds/windows'.  For
-    everything else,  you are on  your own,  and you might  follow the
+    The build  system builds a  statically linked library of  the font
+    engine in the  `objs' directory.  It does _not_  support the build
+    of  DLLs on  Windows and  OS/2.  If  you need  these, you  have to
+    either   use  an   IDE-specific  project   file,  or   follow  the
     instructions in `INSTALL.ANY' to create your own Makefiles.
 
 ----------------------------------------------------------------------
 
-Copyright (C) 2003-2021 by
+Copyright 2003, 2004, 2005, 2006, 2008 by
 David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This  file is  part of  the FreeType  project, and  may only  be used,

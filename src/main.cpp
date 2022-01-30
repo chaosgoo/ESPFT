@@ -5,6 +5,7 @@ extern "C"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
+#include FT_BITMAP_H
 }
 typedef uint16_t st7789_color_t;
 
@@ -85,6 +86,7 @@ void loadCharacter(char character, int pixel_height)
       "FT_New_Memory_Face(library, ttf_start, ttf_end - ttf_start - 1, 0, "
       "&face):%d\n",
       error);
+  FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 
   error = FT_Set_Pixel_Sizes(face,          /* handle to face object */
                              0,             /* pixel_width           */
@@ -92,27 +94,30 @@ void loadCharacter(char character, int pixel_height)
   printf("FT_Set_Pixel_Sizes(face, 0,  %d):%d\n", pixel_height, error);
   FT_UInt glyph_index = FT_Get_Char_Index(face, (uint32_t)character);
   printf("glyph_index:%d\n", glyph_index);
-  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
   error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
   printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
-
-          printf("hinting->load_glyph\n");
-          size_t pos = 0;
-  for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
+  FT_Bitmap bitmap;
+  FT_Bitmap_New(&bitmap);
+  FT_Bitmap_Convert(library, &face->glyph->bitmap, &bitmap, 1);
+  size_t pos = 0;
+  for (size_t y = 0; y < bitmap.rows; ++y)
   {
-    for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
+    for (size_t x = 0; x < bitmap.width; ++x)
     {
       int color =
-          face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+          bitmap.buffer[y * face->glyph->bitmap.pitch + x];
       // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
       printf("%d", color);
-      if ((++pos % face->glyph->bitmap.pitch) == 0)
+      if ((++pos % bitmap.pitch) == 0)
       {
         printf("\n");
       }
     }
   }
+  tft.pushImage(0, 0, bitmap.width, bitmap.rows,
+                bitmap.buffer);
 }
 
 void setup()
@@ -151,12 +156,12 @@ void loop()
   //     }
   //   }
   // }
-  Serial.printf("w:%d,h:%d,pixel_mode:%d,num_grays:%d, pitch:%d\n",
-                face->glyph->bitmap.width, face->glyph->bitmap.rows,
-                face->glyph->bitmap.pixel_mode, face->glyph->bitmap.num_grays,
-                face->glyph->bitmap.pitch);
-  tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
-                face->glyph->bitmap.buffer);
+  // Serial.printf("w:%d,h:%d,pixel_mode:%d,num_grays:%d, pitch:%d\n",
+  //               face->glyph->bitmap.width, face->glyph->bitmap.rows,
+  //               face->glyph->bitmap.pixel_mode, face->glyph->bitmap.num_grays,
+  //               face->glyph->bitmap.pitch);
+  // tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
+  //               face->glyph->bitmap.buffer);
 
   delay(10000);
   free(bitmap);

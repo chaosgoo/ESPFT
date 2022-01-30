@@ -20,26 +20,26 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-  /**************************************************************************
-   *
-   * This file is used to define the BDF error enumeration constants.
-   *
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* This file is used to define the BDF error enumeration constants.      */
+  /*                                                                       */
+  /*************************************************************************/
 
-#ifndef BDFERROR_H_
-#define BDFERROR_H_
+#ifndef __BDFERROR_H__
+#define __BDFERROR_H__
 
-#include <freetype/ftmoderr.h>
+#include FT_MODULE_ERRORS_H
 
-#undef FTERRORS_H_
+#undef __FTERRORS_H__
 
 #undef  FT_ERR_PREFIX
 #define FT_ERR_PREFIX  BDF_Err_
 #define FT_ERR_BASE    FT_Mod_Err_BDF
 
-#include <freetype/fterrors.h>
+#include FT_ERRORS_H
 
-#endif /* BDFERROR_H_ */
+#endif /* __BDFERROR_H__ */
 
 
 /* END */

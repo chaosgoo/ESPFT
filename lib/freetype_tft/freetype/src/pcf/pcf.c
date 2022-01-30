@@ -27,9 +27,10 @@ THE SOFTWARE.
 
 #define FT_MAKE_OPTION_SINGLE_OBJECT
 
-#include "pcfdrivr.c"
-#include "pcfread.c"
-#include "pcfutil.c"
 
+#include <ft2build.h>
+#include "pcfutil.c"
+#include "pcfread.c"
+#include "pcfdrivr.c"
 
 /* END */

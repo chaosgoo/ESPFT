@@ -25,15 +25,20 @@ THE SOFTWARE.
 */
 
 
-#ifndef BDFDRIVR_H_
-#define BDFDRIVR_H_
+#ifndef __BDFDRIVR_H__
+#define __BDFDRIVR_H__
 
-#include <freetype/internal/ftdrv.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DRIVER_H
 
 #include "bdf.h"
 
 
 FT_BEGIN_HEADER
+
+#ifdef FT_CONFIG_OPTION_PIC
+#error "this module does not support PIC yet"
+#endif
 
 
   typedef struct  BDF_encoding_el_
@@ -55,6 +60,9 @@ FT_BEGIN_HEADER
 
     BDF_encoding_el*  en_table;
 
+    FT_CharMap        charmap_handle;
+    FT_CharMapRec     charmap;  /* a single charmap per face */
+
     FT_UInt           default_glyph;
 
   } BDF_FaceRec, *BDF_Face;
@@ -66,7 +74,7 @@ FT_BEGIN_HEADER
 FT_END_HEADER
 
 
-#endif /* BDFDRIVR_H_ */
+#endif /* __BDFDRIVR_H__ */
 
 
 /* END */

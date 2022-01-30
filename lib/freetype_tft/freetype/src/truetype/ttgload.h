@@ -1,25 +1,26 @@
-/****************************************************************************
- *
- * ttgload.h
- *
- *   TrueType Glyph Loader (specification).
- *
- * Copyright (C) 1996-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ttgload.h                                                              */
+/*                                                                         */
+/*    TrueType Glyph Loader (specification).                               */
+/*                                                                         */
+/*  Copyright 1996-2006, 2008, 2011 by                                     */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#ifndef TTGLOAD_H_
-#define TTGLOAD_H_
+#ifndef __TTGLOAD_H__
+#define __TTGLOAD_H__
 
 
+#include <ft2build.h>
 #include "ttobjs.h"
 
 #ifdef TT_USE_BYTECODE_INTERPRETER
@@ -42,7 +43,6 @@ FT_BEGIN_HEADER
   FT_LOCAL( void )
   TT_Get_VMetrics( TT_Face     face,
                    FT_UInt     idx,
-                   FT_Pos      yMax,
                    FT_Short*   tsb,
                    FT_UShort*  ah );
 
@@ -55,7 +55,7 @@ FT_BEGIN_HEADER
 
 FT_END_HEADER
 
-#endif /* TTGLOAD_H_ */
+#endif /* __TTGLOAD_H__ */
 
 
 /* END */

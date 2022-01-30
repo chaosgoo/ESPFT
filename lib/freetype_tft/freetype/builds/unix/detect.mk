@@ -3,7 +3,7 @@
 #
 
 
-# Copyright (C) 1996-2021 by
+# Copyright 1996-2000, 2002-2004, 2006, 2013 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -40,10 +40,8 @@ ifeq ($(PLATFORM),unix)
   ifneq ($(findstring devel,$(MAKECMDGOALS)),)
     CONFIG_FILE := unix-dev.mk
     CC          := gcc
-
-    .PHONY: devel
     devel: setup
-	    @:
+    .PHONY: devel
   else
 
     # If `lcc' is the requested target, we use a special configuration
@@ -52,10 +50,8 @@ ifeq ($(PLATFORM),unix)
     ifneq ($(findstring lcc,$(MAKECMDGOALS)),)
       CONFIG_FILE := unix-lcc.mk
       CC          := lcc
-
-      .PHONY: lcc
       lcc: setup
-	      @:
+      .PHONY: lcc
     else
 
       # If a Unix platform is detected, the configure script is called and
@@ -72,24 +68,22 @@ ifeq ($(PLATFORM),unix)
       # platform).
       #
       CONFIG_FILE := unix.mk
-      must_configure := 1
-
-      .PHONY: unix
       unix: setup
-	      @:
+      must_configure := 1
+      .PHONY: unix
     endif
   endif
 
   have_Makefile := $(wildcard $(OBJ_DIR)/Makefile)
 
+      CONFIG_SHELL ?= /bin/sh
       setup: std_setup
   ifdef must_configure
     ifneq ($(have_Makefile),)
       # we are building FT2 not in the src tree
-	        $(TOP_DIR)/builds/unix/configure $(value CFG)
+	      $(CONFIG_SHELL) $(TOP_DIR)/builds/unix/configure $(value CFG)
     else
-	      cd builds/unix; \
-	        ./configure $(value CFG)
+	      cd builds/unix; $(CONFIG_SHELL) ./configure $(value CFG)
     endif
   endif
 

@@ -50,8 +50,7 @@
  */
 #define F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
 #define G(x, y, z)			((y) ^ ((z) & ((x) ^ (y))))
-#define H(x, y, z)			(((x) ^ (y)) ^ (z))
-#define H2(x, y, z)			((x) ^ ((y) ^ (z)))
+#define H(x, y, z)			((x) ^ (y) ^ (z))
 #define I(x, y, z)			((y) ^ ((x) | ~(z)))
 
 /*
@@ -63,19 +62,12 @@
 	(a) += (b);
 
 /*
- * SET reads 4 input bytes in little-endian byte order and stores them in a
- * properly aligned word in host byte order.
+ * SET reads 4 input bytes in little-endian byte order and stores them
+ * in a properly aligned word in host byte order.
  *
- * The check for little-endian architectures that tolerate unaligned memory
- * accesses is just an optimization.  Nothing will break if it fails to detect
- * a suitable architecture.
- *
- * Unfortunately, this optimization may be a C strict aliasing rules violation
- * if the caller's data buffer has effective type that cannot be aliased by
- * MD5_u32plus.  In practice, this problem may occur if these MD5 routines are
- * inlined into a calling function, or with future and dangerously advanced
- * link-time optimizations.  For the time being, keeping these MD5 routines in
- * their own translation unit avoids the problem.
+ * The check for little-endian architectures that tolerate unaligned
+ * memory accesses is just an optimization.  Nothing will break if it
+ * doesn't work.
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
@@ -94,16 +86,16 @@
 #endif
 
 /*
- * This processes one or more 64-byte data blocks, but does NOT update the bit
- * counters.  There are no alignment requirements.
+ * This processes one or more 64-byte data blocks, but does NOT update
+ * the bit counters.  There are no alignment requirements.
  */
-static const void *body(MD5_CTX *ctx, const void *data, unsigned long size)
+static void *body(MD5_CTX *ctx, void *data, unsigned long size)
 {
-	const unsigned char *ptr;
+	unsigned char *ptr;
 	MD5_u32plus a, b, c, d;
 	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
 
-	ptr = (const unsigned char *)data;
+	ptr = (unsigned char *)data;
 
 	a = ctx->a;
 	b = ctx->b;
@@ -154,21 +146,21 @@ static const void *body(MD5_CTX *ctx, const void *data, unsigned long size)
 
 /* Round 3 */
 		STEP(H, a, b, c, d, GET(5), 0xfffa3942, 4)
-		STEP(H2, d, a, b, c, GET(8), 0x8771f681, 11)
+		STEP(H, d, a, b, c, GET(8), 0x8771f681, 11)
 		STEP(H, c, d, a, b, GET(11), 0x6d9d6122, 16)
-		STEP(H2, b, c, d, a, GET(14), 0xfde5380c, 23)
+		STEP(H, b, c, d, a, GET(14), 0xfde5380c, 23)
 		STEP(H, a, b, c, d, GET(1), 0xa4beea44, 4)
-		STEP(H2, d, a, b, c, GET(4), 0x4bdecfa9, 11)
+		STEP(H, d, a, b, c, GET(4), 0x4bdecfa9, 11)
 		STEP(H, c, d, a, b, GET(7), 0xf6bb4b60, 16)
-		STEP(H2, b, c, d, a, GET(10), 0xbebfbc70, 23)
+		STEP(H, b, c, d, a, GET(10), 0xbebfbc70, 23)
 		STEP(H, a, b, c, d, GET(13), 0x289b7ec6, 4)
-		STEP(H2, d, a, b, c, GET(0), 0xeaa127fa, 11)
+		STEP(H, d, a, b, c, GET(0), 0xeaa127fa, 11)
 		STEP(H, c, d, a, b, GET(3), 0xd4ef3085, 16)
-		STEP(H2, b, c, d, a, GET(6), 0x04881d05, 23)
+		STEP(H, b, c, d, a, GET(6), 0x04881d05, 23)
 		STEP(H, a, b, c, d, GET(9), 0xd9d4d039, 4)
-		STEP(H2, d, a, b, c, GET(12), 0xe6db99e5, 11)
+		STEP(H, d, a, b, c, GET(12), 0xe6db99e5, 11)
 		STEP(H, c, d, a, b, GET(15), 0x1fa27cf8, 16)
-		STEP(H2, b, c, d, a, GET(2), 0xc4ac5665, 23)
+		STEP(H, b, c, d, a, GET(2), 0xc4ac5665, 23)
 
 /* Round 4 */
 		STEP(I, a, b, c, d, GET(0), 0xf4292244, 6)
@@ -215,10 +207,10 @@ void MD5_Init(MD5_CTX *ctx)
 	ctx->hi = 0;
 }
 
-void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
+void MD5_Update(MD5_CTX *ctx, void *data, unsigned long size)
 {
 	MD5_u32plus saved_lo;
-	unsigned long used, available;
+	unsigned long used, free;
 
 	saved_lo = ctx->lo;
 	if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo)
@@ -228,16 +220,16 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 	used = saved_lo & 0x3f;
 
 	if (used) {
-		available = 64 - used;
+		free = 64 - used;
 
-		if (size < available) {
+		if (size < free) {
 			memcpy(&ctx->buffer[used], data, size);
 			return;
 		}
 
-		memcpy(&ctx->buffer[used], data, available);
-		data = (const unsigned char *)data + available;
-		size -= available;
+		memcpy(&ctx->buffer[used], data, free);
+		data = (unsigned char *)data + free;
+		size -= free;
 		body(ctx, ctx->buffer, 64);
 	}
 
@@ -249,41 +241,53 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 	memcpy(ctx->buffer, data, size);
 }
 
-#define OUT(dst, src) \
-	(dst)[0] = (unsigned char)(src); \
-	(dst)[1] = (unsigned char)((src) >> 8); \
-	(dst)[2] = (unsigned char)((src) >> 16); \
-	(dst)[3] = (unsigned char)((src) >> 24);
-
 void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 {
-	unsigned long used, available;
+	unsigned long used, free;
 
 	used = ctx->lo & 0x3f;
 
 	ctx->buffer[used++] = 0x80;
 
-	available = 64 - used;
+	free = 64 - used;
 
-	if (available < 8) {
-		memset(&ctx->buffer[used], 0, available);
+	if (free < 8) {
+		memset(&ctx->buffer[used], 0, free);
 		body(ctx, ctx->buffer, 64);
 		used = 0;
-		available = 64;
+		free = 64;
 	}
 
-	memset(&ctx->buffer[used], 0, available - 8);
+	memset(&ctx->buffer[used], 0, free - 8);
 
 	ctx->lo <<= 3;
-	OUT(&ctx->buffer[56], ctx->lo)
-	OUT(&ctx->buffer[60], ctx->hi)
+	ctx->buffer[56] = ctx->lo;
+	ctx->buffer[57] = ctx->lo >> 8;
+	ctx->buffer[58] = ctx->lo >> 16;
+	ctx->buffer[59] = ctx->lo >> 24;
+	ctx->buffer[60] = ctx->hi;
+	ctx->buffer[61] = ctx->hi >> 8;
+	ctx->buffer[62] = ctx->hi >> 16;
+	ctx->buffer[63] = ctx->hi >> 24;
 
 	body(ctx, ctx->buffer, 64);
 
-	OUT(&result[0], ctx->a)
-	OUT(&result[4], ctx->b)
-	OUT(&result[8], ctx->c)
-	OUT(&result[12], ctx->d)
+	result[0] = ctx->a;
+	result[1] = ctx->a >> 8;
+	result[2] = ctx->a >> 16;
+	result[3] = ctx->a >> 24;
+	result[4] = ctx->b;
+	result[5] = ctx->b >> 8;
+	result[6] = ctx->b >> 16;
+	result[7] = ctx->b >> 24;
+	result[8] = ctx->c;
+	result[9] = ctx->c >> 8;
+	result[10] = ctx->c >> 16;
+	result[11] = ctx->c >> 24;
+	result[12] = ctx->d;
+	result[13] = ctx->d >> 8;
+	result[14] = ctx->d >> 16;
+	result[15] = ctx->d >> 24;
 
 	memset(ctx, 0, sizeof(*ctx));
 }

@@ -19,8 +19,12 @@
       "+<truetype/truetype.c>",
       "+<sfnt/sfnt.c>",
       "+<smooth/smooth.c>",
+      "+<base/<bitmap.c>",
+      "+<base/ftadvanc.c>",
+      "+<cache/ftcache.c>",
       "+<gzip/ftgzip.c>",
-      "+<base>/<bitmap.c>"
+      "+<base/ftbitmap.c>",
+      "+<base/ftadvanc.c>"
     ],
     "flags": [
       "-DFT2_BUILD_LIBRARY",

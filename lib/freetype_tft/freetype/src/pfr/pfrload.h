@@ -1,43 +1,38 @@
-/****************************************************************************
- *
- * pfrload.h
- *
- *   FreeType PFR loader (specification).
- *
- * Copyright (C) 2002-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  pfrload.h                                                              */
+/*                                                                         */
+/*    FreeType PFR loader (specification).                                 */
+/*                                                                         */
+/*  Copyright 2002 by                                                      */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#ifndef PFRLOAD_H_
-#define PFRLOAD_H_
+#ifndef __PFRLOAD_H__
+#define __PFRLOAD_H__
 
 #include "pfrobjs.h"
-#include <freetype/internal/ftstream.h>
+#include FT_INTERNAL_STREAM_H
 
 
 FT_BEGIN_HEADER
 
-  /* some size checks should be always done (mainly to prevent */
-  /* excessive allocation for malformed data), ...             */
-#define PFR_CHECK_SIZE( x )  do                       \
-                             {                        \
-                               if ( p + (x) > limit ) \
-                                 goto Too_Short;      \
-                             } while ( 0 )
-
-  /* ... and some only if intensive checking is explicitly requested */
 #ifdef PFR_CONFIG_NO_CHECKS
 #define PFR_CHECK( x )  do { } while ( 0 )
 #else
-#define PFR_CHECK  PFR_CHECK_SIZE
+#define PFR_CHECK( x )  do                       \
+                        {                        \
+                          if ( p + (x) > limit ) \
+                            goto Too_Short;      \
+                        } while ( 0 )
 #endif
 
 #define PFR_NEXT_BYTE( p )    FT_NEXT_BYTE( p )
@@ -90,7 +85,7 @@ FT_BEGIN_HEADER
   FT_LOCAL( FT_Error )
   pfr_log_font_count( FT_Stream   stream,
                       FT_UInt32   log_section_offset,
-                      FT_Long    *acount );
+                      FT_UInt    *acount );
 
   /* load a pfr logical font entry */
   FT_LOCAL( FT_Error )
@@ -117,7 +112,7 @@ FT_BEGIN_HEADER
 
 FT_END_HEADER
 
-#endif /* PFRLOAD_H_ */
+#endif /* __PFRLOAD_H__ */
 
 
 /* END */

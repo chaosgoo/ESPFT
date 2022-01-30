@@ -1,30 +1,31 @@
-/****************************************************************************
- *
- * ftccache.c
- *
- *   The FreeType internal cache interface (body).
- *
- * Copyright (C) 2000-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ftccache.c                                                             */
+/*                                                                         */
+/*    The FreeType internal cache interface (body).                        */
+/*                                                                         */
+/*  Copyright 2000-2007, 2009-2011, 2013 by                                */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
+#include <ft2build.h>
 #include "ftcmanag.h"
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdebug.h>
+#include FT_INTERNAL_OBJECTS_H
+#include FT_INTERNAL_DEBUG_H
 
 #include "ftccback.h"
 #include "ftcerror.h"
 
 #undef  FT_COMPONENT
-#define FT_COMPONENT  cache
+#define FT_COMPONENT  trace_cache
 
 
 #define FTC_HASH_MAX_LOAD  2
@@ -84,20 +85,21 @@
 
 
   /* get a top bucket for specified hash from cache,
-   * body for FTC_NODE_TOP_FOR_HASH( cache, hash )
+   * body for FTC_NODE__TOP_FOR_HASH( cache, hash )
    */
   FT_LOCAL_DEF( FTC_Node* )
-  ftc_get_top_node_for_hash( FTC_Cache  cache,
-                             FT_Offset  hash )
+  ftc_get_top_node_for_hash( FTC_Cache   cache,
+                             FT_PtrDist  hash )
   {
-    FT_Offset  idx;
+    FTC_Node*  pnode;
+    FT_UInt    idx;
 
 
-    idx = hash & cache->mask;
+    idx = (FT_UInt)( hash & cache->mask );
     if ( idx < cache->p )
-      idx = hash & ( 2 * cache->mask + 1 );
-
-    return cache->buckets + idx;
+      idx = (FT_UInt)( hash & ( 2 * cache->mask + 1 ) );
+    pnode = cache->buckets + idx;
+    return pnode;
   }
 
 #endif /* !FTC_INLINE */
@@ -118,7 +120,7 @@
       FT_UFast  count = mask + p + 1;    /* number of buckets */
 
 
-      /* do we need to expand the buckets array? */
+      /* do we need to shrink the buckets array? */
       if ( cache->slack < 0 )
       {
         FTC_Node  new_list = NULL;
@@ -145,7 +147,7 @@
         for (;;)
         {
           node = *pnode;
-          if ( !node )
+          if ( node == NULL )
             break;
 
           if ( node->hash & ( mask + 1 ) )
@@ -171,7 +173,7 @@
           cache->p = p + 1;
       }
 
-      /* do we need to shrink the buckets array? */
+      /* do we need to expand the buckets array? */
       else if ( cache->slack > (FT_Long)count * FTC_HASH_SUB_LOAD )
       {
         FT_UFast   old_index = p + mask;
@@ -188,7 +190,7 @@
 
 
           /* if we can't shrink the array, leave immediately */
-          if ( FT_QRENEW_ARRAY( cache->buckets,
+          if ( FT_RENEW_ARRAY( cache->buckets,
                                ( mask + 1 ) * 2, mask + 1 ) )
             break;
 
@@ -222,7 +224,7 @@
   ftc_node_hash_unlink( FTC_Node   node0,
                         FTC_Cache  cache )
   {
-    FTC_Node  *pnode = FTC_NODE_TOP_FOR_HASH( cache, node0->hash );
+    FTC_Node  *pnode = FTC_NODE__TOP_FOR_HASH( cache, node0->hash );
 
 
     for (;;)
@@ -230,7 +232,7 @@
       FTC_Node  node = *pnode;
 
 
-      if ( !node )
+      if ( node == NULL )
       {
         FT_TRACE0(( "ftc_node_hash_unlink: unknown node\n" ));
         return;
@@ -255,7 +257,7 @@
   ftc_node_hash_link( FTC_Node   node,
                       FTC_Cache  cache )
   {
-    FTC_Node  *pnode = FTC_NODE_TOP_FOR_HASH( cache, node->hash );
+    FTC_Node  *pnode = FTC_NODE__TOP_FOR_HASH( cache, node->hash );
 
 
     node->link = *pnode;
@@ -267,7 +269,11 @@
 
 
   /* remove a node from the cache manager */
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
+  FT_BASE_DEF( void )
+#else
   FT_LOCAL_DEF( void )
+#endif
   ftc_node_destroy( FTC_Node     node,
                     FTC_Manager  manager )
   {
@@ -286,7 +292,7 @@
     cache = manager->caches[node->cache_index];
 
 #ifdef FT_DEBUG_ERROR
-    if ( !cache )
+    if ( cache == NULL )
     {
       FT_TRACE0(( "ftc_node_destroy: invalid node handle\n" ));
       return;
@@ -340,7 +346,7 @@
     cache->mask  = FTC_HASH_INITIAL_SIZE - 1;
     cache->slack = FTC_HASH_INITIAL_SIZE * FTC_HASH_MAX_LOAD;
 
-    FT_MEM_NEW_ARRAY( cache->buckets, FTC_HASH_INITIAL_SIZE * 2 );
+    (void)FT_NEW_ARRAY( cache->buckets, FTC_HASH_INITIAL_SIZE * 2 );
     return error;
   }
 
@@ -359,7 +365,7 @@
 
       for ( i = 0; i < count; i++ )
       {
-        FTC_Node  node = cache->buckets[i], next;
+        FTC_Node  *pnode = cache->buckets + i, next, node = *pnode;
 
 
         while ( node )
@@ -412,11 +418,11 @@
 
   static void
   ftc_cache_add( FTC_Cache  cache,
-                 FT_Offset  hash,
+                 FT_PtrDist hash,
                  FTC_Node   node )
   {
     node->hash        = hash;
-    node->cache_index = (FT_UShort)cache->index;
+    node->cache_index = (FT_UInt16)cache->index;
     node->ref_count   = 0;
 
     ftc_node_hash_link( node, cache );
@@ -440,7 +446,7 @@
 
   FT_LOCAL_DEF( FT_Error )
   FTC_Cache_NewNode( FTC_Cache   cache,
-                     FT_Offset   hash,
+                     FT_PtrDist  hash,
                      FT_Pointer  query,
                      FTC_Node   *anode )
   {
@@ -458,7 +464,7 @@
     {
       error = cache->clazz.node_new( &node, query, cache );
     }
-    FTC_CACHE_TRYLOOP_END( NULL )
+    FTC_CACHE_TRYLOOP_END( NULL );
 
     if ( error )
       node = NULL;
@@ -479,7 +485,7 @@
 
   FT_LOCAL_DEF( FT_Error )
   FTC_Cache_Lookup( FTC_Cache   cache,
-                    FT_Offset   hash,
+                    FT_PtrDist  hash,
                     FT_Pointer  query,
                     FTC_Node   *anode )
   {
@@ -492,18 +498,18 @@
     FTC_Node_CompareFunc  compare = cache->clazz.node_compare;
 
 
-    if ( !cache || !anode )
+    if ( cache == NULL || anode == NULL )
       return FT_THROW( Invalid_Argument );
 
     /* Go to the `top' node of the list sharing same masked hash */
-    bucket = pnode = FTC_NODE_TOP_FOR_HASH( cache, hash );
+    bucket = pnode = FTC_NODE__TOP_FOR_HASH( cache, hash );
 
     /* Lookup a node with exactly same hash and queried properties.  */
     /* NOTE: _nodcomp() may change the linked list to reduce memory. */
     for (;;)
     {
       node = *pnode;
-      if ( !node )
+      if ( node == NULL )
         goto NewNode;
 
       if ( node->hash == hash                           &&
@@ -516,18 +522,18 @@
     if ( list_changed )
     {
       /* Update bucket by modified linked list */
-      bucket = pnode = FTC_NODE_TOP_FOR_HASH( cache, hash );
+      bucket = pnode = FTC_NODE__TOP_FOR_HASH( cache, hash );
 
       /* Update pnode by modified linked list */
       while ( *pnode != node )
       {
-        if ( !*pnode )
+        if ( *pnode == NULL )
         {
           FT_ERROR(( "FTC_Cache_Lookup: oops!!!  node missing\n" ));
           goto NewNode;
         }
         else
-          pnode = &(*pnode)->link;
+          pnode = &((*pnode)->link);
       }
     }
 
@@ -570,16 +576,17 @@
     count = cache->p + cache->mask + 1;
     for ( i = 0; i < count; i++ )
     {
-      FTC_Node*  pnode = cache->buckets + i;
+      FTC_Node*  bucket = cache->buckets + i;
+      FTC_Node*  pnode  = bucket;
 
 
-      for (;;)
+      for ( ;; )
       {
         FTC_Node  node = *pnode;
         FT_Bool   list_changed = FALSE;
 
 
-        if ( !node )
+        if ( node == NULL )
           break;
 
         if ( cache->clazz.node_remove_faceid( node, face_id,

@@ -1,23 +1,26 @@
 How to prepare a new release
 ----------------------------
 
-. include/freetype/freetype.h: Update `FREETYPE_MAJOR`,
-  `FREETYPE_MINOR`, and `FREETYPE_PATCH`.
+. include/freetype/freetype.h:  Update FREETYPE_MAJOR, FREETYPE_MINOR,
+  and FREETYPE_PATCH.
 
 . Update version numbers in all files where necessary (for example, do
-  a grep for both '2.10.4' and '2104' for release 2.10.4).
+  a grep for both `2.3.1' and `231' for release 2.3.1).
 
-. builds/unix/configure.raw: Update `version_info`.
+. builds/unix/configure.raw: Update `version_info'.
 
 . docs/CHANGES: Document differences to last release.
 
 . README: Update.
 
-. docs/VERSIONS.TXT: Document changed `version_info`.
+. docs/VERSION.DLL: Document changed `version_info'.
+
+. ChangeLog:   Announce  new  release   (both  in  the  freetype2  and
+  freetype2-demos modules).
 
 . Clone the git archive to another directory with
 
-    git clone -l -s . ../freetype.test
+    git clone -l -s . ../freetype2.test
 
   or something like this and run
 
@@ -32,14 +35,13 @@ How to prepare a new release
 
   in the cloned repository to test compilation with both gcc and g++.
 
-. Test C++ compilation for 'freetype-demos' too (using `git clone` as
+. Test C++ compilation  for freetype2-demos too  (using `git clone' as
   above).
 
-. Run `src/tools/chktrcmp.py` and check that there are no undefined
-  `trace_XXXX` macros.
+. Run  src/tools/chktrcmp.py  and check  that there  are no  undefined
+  trace_XXXX macros.
 
-. After pushing the new release, tag the git repositories ('freetype',
-  'freetype-demos') with
+. Tag the git repositories (freetype2, freetype2-demos) with
 
     git tag VER-<version> -m "" -u <committer>
 
@@ -47,33 +49,35 @@ How to prepare a new release
 
     git push --tags
 
+  TODO: Tag the home page CVS on savannah.nongnu.org.
+
 . Check with
 
     git clean -ndx
 
-  that the git directory is really clean (and remove extraneous files
+  that the git directory is really clean  (and remove extraneous files
   if necessary).
 
-. Say `make dist` in both the 'freetype' and 'freetype-demos'
-  repositories to generate the `.tar.gz`, `.tar.xz`, and `.zip` files.
+. Say `make  dist' in both the  freetype2 and freetype2-demos  modules
+  to generate the .tar.gz, .tar.bz2, and .zip files.
 
-. Create the doc bundles (`freetype-doc-<version>.tar.gz`,
-  `freetype-doc-<version>.tar.xz`, `ftdoc<version>.zip`).  This is
-  everything in
+. Create     the     doc    bundles    (freetype-doc-<version>.tar.gz,
+  freetype-doc-<version>.tar.bz2,    ftdoc<version>.zip).    This   is
+  everything below
 
-    <freetype-web git repository>/freetype2/docs
+    freetype.freedesktop.org:/srv/freetype.freedesktop.org/www/freetype2/docs/
 
-  except the `reference` subdirectory.  Do *not* use option `-l` from
+  except the `reference' subdirectory.   Do *not* use option `-l' from
   zip!
 
-. Run the following script (with updated `$VERSION`, `$SAVANNAH_USER`,
-  and `$SOURCEFORGE_USER` variables) to sign and upload the bundles to
+. Run the following script (with updated `$VERSION', `$SAVANNAH_USER',
+  and $SOURCEFORGE_USER  variables) to sign and upload the  bundles to
   both Savannah and SourceForge.  The signing code has been taken from
-  the `gnupload` script (part of the 'automake' bundle).
+  the `gnupload' script (part of the automake bundle).
 
     #!/bin/sh
 
-    VERSION=2.10.4
+    VERSION=2.4.8
     SAVANNAH_USER=wl
     SOURCEFORGE_USER=wlemb
 
@@ -84,13 +88,13 @@ How to prepare a new release
     version=`echo $VERSION | sed "s/\\.//g"`
 
     FREETYPE_PACKAGES="freetype-$VERSION.tar.gz \
-                       freetype-$VERSION.tar.xz \
+                       freetype-$VERSION.tar.bz2 \
                        ft$version.zip"
     FT2DEMOS_PACKAGES="ft2demos-$VERSION.tar.gz \
-                       ft2demos-$VERSION.tar.xz \
+                       ft2demos-$VERSION.tar.bz2 \
                        ftdmo$version.zip"
     FTDOC_PACKAGES="freetype-doc-$VERSION.tar.gz \
-                    freetype-doc-$VERSION.tar.xz \
+                    freetype-doc-$VERSION.tar.bz2 \
                     ftdoc$version.zip"
 
     PACKAGE_LIST="$FREETYPE_PACKAGES \
@@ -152,13 +156,12 @@ How to prepare a new release
 
     # EOF
 
-. Prepare a `README` file for SourceForge and upload it with the
-  following script (with updated `$VERSION` and `$SOURCEFORGE_USER`
-  variables).
+. Prepare a  README for SourceForge  and upload it  with the following
+  script (with updated `$VERSION' and $SOURCEFORGE_USER variables).
 
     #!/bin/sh
 
-    VERSION=2.10.4
+    VERSION=2.4.8
     SOURCEFORGE_USER=wlemb
 
     #####################################################################
@@ -168,20 +171,39 @@ How to prepare a new release
 
     # EOF
 
-. On SourceForge, tag the just uploaded `ftXXX.zip` and
-  `freetype-XXX.tar.xz` files as the default files to download for
-  'Windows' and 'Others', respectively.
+. On   SourceForge,   tag   the   just   uploaded   `ftXXXX.zip'   and
+  `freetype-XXX.tar.bz2'  files as the  default files to  download for
+  `Windows' and `Others', respectively.
 
-. Trigger the automatic generation of the online API reference by
-  updating the `FT_VERSION` variable in file `.gitlab-ci.yml` of the
-  'freetype-web' repository.
+. Copy the reference files (generated by `make dist') to
 
-. Announce new release on 'freetype-announce@nongnu.org' and to
-  relevant newsgroups.
+    freetype.freedesktop.org:/srv/freetype.freedesktop.org/www/freetype2/docs/reference
+
+  and
+
+    shell.sf.net:/home/groups/f/fr/freetype/htdocs/freetype2/docs/reference
+
+  TODO: Create  FreeType  home  page  CVS  on savannah.nongnu.org  and
+        update it accordingly.
+
+        Write script to automatically do this.
+
+        Mirror FreeType's savannah home page everywhere.
+
+. Update
+
+    freetype.freedesktop.org:/srv/freetype.freedesktop.org/www/index2.html
+
+  and copy it to
+
+    shell.sf.net:/home/groups/f/fr/freetype/htdocs/index2.html
+
+. Announce new release on freetype-announce@nongnu.org and to relevant
+  newsgroups.
 
 ----------------------------------------------------------------------
 
-Copyright (C) 2003-2021 by
+Copyright 2003, 2005-2007, 2009, 2011-2012 by
 David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This  file is  part of  the FreeType  project, and  may only  be used,

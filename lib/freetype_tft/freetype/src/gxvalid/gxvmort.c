@@ -1,47 +1,46 @@
-/****************************************************************************
- *
- * gxvmort.c
- *
- *   TrueTypeGX/AAT mort table validation (body).
- *
- * Copyright (C) 2005-2021 by
- * suzuki toshiya, Masatake YAMATO, Red Hat K.K.,
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  gxvmort.c                                                              */
+/*                                                                         */
+/*    TrueTypeGX/AAT mort table validation (body).                         */
+/*                                                                         */
+/*  Copyright 2005 by suzuki toshiya, Masatake YAMATO, Red Hat K.K.,       */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
-/****************************************************************************
- *
- * gxvalid is derived from both gxlayout module and otvalid module.
- * Development of gxlayout is supported by the Information-technology
- * Promotion Agency(IPA), Japan.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/* gxvalid is derived from both gxlayout module and otvalid module.        */
+/* Development of gxlayout is supported by the Information-technology      */
+/* Promotion Agency(IPA), Japan.                                           */
+/*                                                                         */
+/***************************************************************************/
 
 
 #include "gxvmort.h"
 #include "gxvfeat.h"
 
 
-  /**************************************************************************
-   *
-   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
-   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
-   * messages during execution.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  gxvmort
+#define FT_COMPONENT  trace_gxvmort
 
 
   static void
   gxv_mort_feature_validate( GXV_mort_feature  f,
-                             GXV_Validator     gxvalid )
+                             GXV_Validator     valid )
   {
     if ( f->featureType >= gxv_feat_registry_length )
     {
@@ -90,7 +89,7 @@
   gxv_mort_featurearray_validate( FT_Bytes       table,
                                   FT_Bytes       limit,
                                   FT_ULong       nFeatureFlags,
-                                  GXV_Validator  gxvalid )
+                                  GXV_Validator  valid )
   {
     FT_Bytes  p = table;
     FT_ULong  i;
@@ -107,25 +106,23 @@
       f.enableFlags    = FT_NEXT_ULONG( p );
       f.disableFlags   = FT_NEXT_ULONG( p );
 
-      gxv_mort_feature_validate( &f, gxvalid );
+      gxv_mort_feature_validate( &f, valid );
     }
 
     if ( !IS_GXV_MORT_FEATURE_OFF( f ) )
       FT_INVALID_DATA;
 
-    gxvalid->subtable_length = (FT_ULong)( p - table );
+    valid->subtable_length = p - table;
     GXV_EXIT;
   }
 
 
   FT_LOCAL_DEF( void )
   gxv_mort_coverage_validate( FT_UShort      coverage,
-                              GXV_Validator  gxvalid )
+                              GXV_Validator  valid )
   {
-    FT_UNUSED( gxvalid );
-    FT_UNUSED( coverage );
+    FT_UNUSED( valid );
 
-#ifdef FT_DEBUG_LEVEL_TRACE
     if ( coverage & 0x8000U )
       GXV_TRACE(( " this subtable is for vertical text only\n" ));
     else
@@ -144,7 +141,6 @@
 
     if ( coverage & 0x1FF8 )
       GXV_TRACE(( " coverage has non-zero bits in reserved area\n" ));
-#endif
   }
 
 
@@ -152,7 +148,7 @@
   gxv_mort_subtables_validate( FT_Bytes       table,
                                FT_Bytes       limit,
                                FT_UShort      nSubtables,
-                               GXV_Validator  gxvalid )
+                               GXV_Validator  valid )
   {
     FT_Bytes  p = table;
 
@@ -167,15 +163,14 @@
 
     };
 
-    FT_UShort  i;
+    GXV_Validate_Func  func;
+    FT_UShort          i;
 
 
     GXV_NAME_ENTER( "subtables in a chain" );
 
     for ( i = 0; i < nSubtables; i++ )
     {
-      GXV_Validate_Func  func;
-
       FT_UShort  length;
       FT_UShort  coverage;
 #ifdef GXV_LOAD_UNUSED_VARS
@@ -200,22 +195,22 @@
       rest = length - ( 2 + 2 + 4 );
 
       GXV_LIMIT_CHECK( rest );
-      gxv_mort_coverage_validate( coverage, gxvalid );
+      gxv_mort_coverage_validate( coverage, valid );
 
       if ( type > 5 )
         FT_INVALID_FORMAT;
 
       func = fmt_funcs_table[type];
-      if ( !func )
+      if ( func == NULL )
         GXV_TRACE(( "morx type %d is reserved\n", type ));
 
-      func( p, p + rest, gxvalid );
+      func( p, p + rest, valid );
 
       p += rest;
       /* TODO: validate subFeatureFlags */
     }
 
-    gxvalid->subtable_length = (FT_ULong)( p - table );
+    valid->subtable_length = p - table;
 
     GXV_EXIT;
   }
@@ -224,7 +219,7 @@
   static void
   gxv_mort_chain_validate( FT_Bytes       table,
                            FT_Bytes       limit,
-                           GXV_Validator  gxvalid )
+                           GXV_Validator  valid )
   {
     FT_Bytes   p = table;
 #ifdef GXV_LOAD_UNUSED_VARS
@@ -248,10 +243,10 @@
     nSubtables    = FT_NEXT_USHORT( p );
 
     gxv_mort_featurearray_validate( p, table + chainLength,
-                                    nFeatureFlags, gxvalid );
-    p += gxvalid->subtable_length;
-    gxv_mort_subtables_validate( p, table + chainLength, nSubtables, gxvalid );
-    gxvalid->subtable_length = chainLength;
+                                    nFeatureFlags, valid );
+    p += valid->subtable_length;
+    gxv_mort_subtables_validate( p, table + chainLength, nSubtables, valid );
+    valid->subtable_length = chainLength;
 
     /* TODO: validate defaultFlags */
     GXV_EXIT;
@@ -263,8 +258,8 @@
                      FT_Face       face,
                      FT_Validator  ftvalid )
   {
-    GXV_ValidatorRec  gxvalidrec;
-    GXV_Validator     gxvalid = &gxvalidrec;
+    GXV_ValidatorRec  validrec;
+    GXV_Validator     valid = &validrec;
     FT_Bytes          p     = table;
     FT_Bytes          limit = 0;
     FT_ULong          version;
@@ -272,9 +267,9 @@
     FT_ULong          i;
 
 
-    gxvalid->root = ftvalid;
-    gxvalid->face = face;
-    limit         = gxvalid->root->limit;
+    valid->root = ftvalid;
+    valid->face = face;
+    limit       = valid->root->limit;
 
     FT_TRACE3(( "validating `mort' table\n" ));
     GXV_INIT;
@@ -288,10 +283,10 @@
 
     for ( i = 0; i < nChains; i++ )
     {
-      GXV_TRACE(( "validating chain %lu/%lu\n", i + 1, nChains ));
+      GXV_TRACE(( "validating chain %d/%d\n", i + 1, nChains ));
       GXV_32BIT_ALIGNMENT_VALIDATE( p - table );
-      gxv_mort_chain_validate( p, limit, gxvalid );
-      p += gxvalid->subtable_length;
+      gxv_mort_chain_validate( p, limit, valid );
+      p += valid->subtable_length;
     }
 
     FT_TRACE4(( "\n" ));

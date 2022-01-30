@@ -1,25 +1,26 @@
-/****************************************************************************
- *
- * ftadvanc.c
- *
- *   Quick computation of advance widths (body).
- *
- * Copyright (C) 2008-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ftadvanc.c                                                             */
+/*                                                                         */
+/*    Quick computation of advance widths (body).                          */
+/*                                                                         */
+/*  Copyright 2008, 2009, 2011, 2013 by                                    */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#include <freetype/internal/ftdebug.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
 
-#include <freetype/ftadvanc.h>
-#include <freetype/internal/ftobjs.h>
+#include FT_ADVANCES_H
+#include FT_INTERNAL_OBJECTS_H
 
 
   static FT_Error
@@ -35,7 +36,7 @@
     if ( flags & FT_LOAD_NO_SCALE )
       return FT_Err_Ok;
 
-    if ( !face->size )
+    if ( face->size == NULL )
       return FT_THROW( Invalid_Size_Handle );
 
     if ( flags & FT_LOAD_VERTICAL_LAYOUT )
@@ -59,11 +60,8 @@
    /*  - unscaled load                                             */
    /*  - unhinted load                                             */
    /*  - light-hinted load                                         */
-   /*  - if a variations font, it must have an `HVAR' or `VVAR'    */
-   /*    table (thus the old MM or GX fonts don't qualify; this    */
-   /*    gets checked by the driver-specific functions)            */
 
-#define LOAD_ADVANCE_FAST_CHECK( face, flags )                      \
+#define LOAD_ADVANCE_FAST_CHECK( flags )                            \
           ( flags & ( FT_LOAD_NO_SCALE | FT_LOAD_NO_HINTING )    || \
             FT_LOAD_TARGET_MODE( flags ) == FT_RENDER_MODE_LIGHT )
 
@@ -82,14 +80,11 @@
     if ( !face )
       return FT_THROW( Invalid_Face_Handle );
 
-    if ( !padvance )
-      return FT_THROW( Invalid_Argument );
-
     if ( gindex >= (FT_UInt)face->num_glyphs )
       return FT_THROW( Invalid_Glyph_Index );
 
     func = face->driver->clazz->get_advances;
-    if ( func && LOAD_ADVANCE_FAST_CHECK( face, flags ) )
+    if ( func && LOAD_ADVANCE_FAST_CHECK( flags ) )
     {
       FT_Error  error;
 
@@ -115,19 +110,13 @@
                    FT_Int32   flags,
                    FT_Fixed  *padvances )
   {
-    FT_Error  error = FT_Err_Ok;
-
     FT_Face_GetAdvancesFunc  func;
-
-    FT_UInt  num, end, nn;
-    FT_Int   factor;
+    FT_UInt                  num, end, nn;
+    FT_Error                 error = FT_Err_Ok;
 
 
     if ( !face )
       return FT_THROW( Invalid_Face_Handle );
-
-    if ( !padvances )
-      return FT_THROW( Invalid_Argument );
 
     num = (FT_UInt)face->num_glyphs;
     end = start + count;
@@ -138,7 +127,7 @@
       return FT_Err_Ok;
 
     func = face->driver->clazz->get_advances;
-    if ( func && LOAD_ADVANCE_FAST_CHECK( face, flags ) )
+    if ( func && LOAD_ADVANCE_FAST_CHECK( flags ) )
     {
       error = func( face, start, count, flags, padvances );
       if ( !error )
@@ -154,17 +143,16 @@
       return FT_THROW( Unimplemented_Feature );
 
     flags |= (FT_UInt32)FT_LOAD_ADVANCE_ONLY;
-    factor = ( flags & FT_LOAD_NO_SCALE ) ? 1 : 1024;
     for ( nn = 0; nn < count; nn++ )
     {
       error = FT_Load_Glyph( face, start + nn, flags );
       if ( error )
         break;
 
-      /* scale from 26.6 to 16.16, unless NO_SCALE was requested */
+      /* scale from 26.6 to 16.16 */
       padvances[nn] = ( flags & FT_LOAD_VERTICAL_LAYOUT )
-                      ? face->glyph->advance.y * factor
-                      : face->glyph->advance.x * factor;
+                      ? face->glyph->advance.y << 10
+                      : face->glyph->advance.x << 10;
     }
 
     return error;

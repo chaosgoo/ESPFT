@@ -3,7 +3,7 @@
 #
 
 
-# Copyright (C) 2002-2021 by
+# Copyright 2002, 2003 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -20,10 +20,7 @@ PFR_DIR := $(SRC_DIR)/pfr
 
 # compilation flags for the driver
 #
-PFR_COMPILE := $(CC) $(ANSIFLAGS)                            \
-                     $I$(subst /,$(COMPILER_SEP),$(PFR_DIR)) \
-                     $(INCLUDE_FLAGS)                        \
-                     $(FT_CFLAGS)
+PFR_COMPILE := $(FT_COMPILE) $I$(subst /,$(COMPILER_SEP),$(PFR_DIR))
 
 
 # pfr driver sources (i.e., C files)

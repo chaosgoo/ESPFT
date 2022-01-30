@@ -1,25 +1,24 @@
-/****************************************************************************
- *
- * afmparse.c
- *
- *   AFM parser (body).
- *
- * Copyright (C) 2006-2021 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  afmparse.c                                                             */
+/*                                                                         */
+/*    AFM parser (body).                                                   */
+/*                                                                         */
+/*  Copyright 2006-2010, 2012, 2013 by                                     */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
-#include <freetype/freetype.h>
-#include <freetype/internal/ftdebug.h>
-#include <freetype/internal/psaux.h>
-
-#ifndef T1_CONFIG_OPTION_NO_AFM
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_POSTSCRIPT_AUX_H
 
 #include "afmparse.h"
 #include "psconv.h"
@@ -27,23 +26,13 @@
 #include "psauxerr.h"
 
 
-  /**************************************************************************
-   *
-   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
-   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
-   * messages during execution.
-   */
-#undef  FT_COMPONENT
-#define FT_COMPONENT  afmparse
-
-
-  /**************************************************************************
-   *
-   * AFM_Stream
-   *
-   * The use of AFM_Stream is largely inspired by parseAFM.[ch] from t1lib.
-   *
-   */
+/***************************************************************************/
+/*                                                                         */
+/*    AFM_Stream                                                           */
+/*                                                                         */
+/* The use of AFM_Stream is largely inspired by parseAFM.[ch] from t1lib.  */
+/*                                                                         */
+/*                                                                         */
 
   enum
   {
@@ -86,8 +75,8 @@
 #define AFM_STREAM_KEY_BEGIN( stream )    \
           (char*)( (stream)->cursor - 1 )
 
-#define AFM_STREAM_KEY_LEN( stream, key )           \
-          (FT_Offset)( (char*)(stream)->cursor - key - 1 )
+#define AFM_STREAM_KEY_LEN( stream, key )       \
+          ( (char*)(stream)->cursor - key - 1 )
 
 #define AFM_STATUS_EOC( stream ) \
           ( (stream)->status >= AFM_STREAM_STATUS_EOC )
@@ -131,6 +120,7 @@
   afm_stream_read_one( AFM_Stream  stream )
   {
     char*  str;
+    int    ch;
 
 
     afm_stream_skip_spaces( stream );
@@ -141,9 +131,7 @@
 
     while ( 1 )
     {
-      int  ch = AFM_GETC();
-
-
+      ch = AFM_GETC();
       if ( AFM_IS_SPACE( ch ) )
         break;
       else if ( AFM_IS_NEWLINE( ch ) )
@@ -172,6 +160,7 @@
   afm_stream_read_string( AFM_Stream  stream )
   {
     char*  str;
+    int    ch;
 
 
     afm_stream_skip_spaces( stream );
@@ -183,9 +172,7 @@
     /* scan to eol */
     while ( 1 )
     {
-      int  ch = AFM_GETC();
-
-
+      ch = AFM_GETC();
       if ( AFM_IS_NEWLINE( ch ) )
       {
         stream->status = AFM_STREAM_STATUS_EOL;
@@ -202,11 +189,11 @@
   }
 
 
-  /**************************************************************************
-   *
-   * AFM_Parser
-   *
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /*    AFM_Parser                                                         */
+  /*                                                                       */
+  /*                                                                       */
 
   /* all keys defined in Ch. 7-10 of 5004.AFM_Spec.pdf */
   typedef enum  AFM_Token_
@@ -380,11 +367,11 @@
   FT_LOCAL_DEF( FT_Int )
   afm_parser_read_vals( AFM_Parser  parser,
                         AFM_Value   vals,
-                        FT_Int      n )
+                        FT_UInt     n )
   {
     AFM_Stream  stream = parser->stream;
     char*       str;
-    FT_Int      i;
+    FT_UInt     i;
 
 
     if ( n > AFM_MAX_ARGUMENTS )
@@ -457,7 +444,7 @@
                        FT_Offset*  len )
   {
     AFM_Stream  stream = parser->stream;
-    char*       key    = NULL;  /* make stupid compiler happy */
+    char*       key    = 0;  /* make stupid compiler happy */
 
 
     if ( line )
@@ -573,7 +560,7 @@
   }
 
 
-  static FT_Error
+  FT_LOCAL_DEF( FT_Error )
   afm_parser_read_int( AFM_Parser  parser,
                        FT_Int*     aint )
   {
@@ -596,39 +583,15 @@
   static FT_Error
   afm_parse_track_kern( AFM_Parser  parser )
   {
-    AFM_FontInfo   fi     = parser->FontInfo;
-    AFM_Stream     stream = parser->stream;
+    AFM_FontInfo   fi = parser->FontInfo;
     AFM_TrackKern  tk;
-
-    char*      key;
-    FT_Offset  len;
-    int        n = -1;
-    FT_Int     tmp;
+    char*          key;
+    FT_Offset      len;
+    int            n = -1;
 
 
-    if ( afm_parser_read_int( parser, &tmp ) )
+    if ( afm_parser_read_int( parser, &fi->NumTrackKern ) )
         goto Fail;
-
-    if ( tmp < 0 )
-    {
-      FT_ERROR(( "afm_parse_track_kern: invalid number of track kerns\n" ));
-      goto Fail;
-    }
-
-    fi->NumTrackKern = (FT_UInt)tmp;
-    FT_TRACE3(( "afm_parse_track_kern: %u track kern%s expected\n",
-                fi->NumTrackKern,
-                fi->NumTrackKern == 1 ? "" : "s" ));
-
-    /* Rough sanity check: The minimum line length of the `TrackKern` */
-    /* command is 20 characters (including the EOL character).        */
-    if ( (FT_ULong)( stream->limit - stream->cursor ) / 20 <
-           fi->NumTrackKern )
-    {
-      FT_ERROR(( "afm_parse_track_kern:"
-                 " number of track kern entries exceeds stream size\n" ));
-      goto Fail;
-    }
 
     if ( fi->NumTrackKern )
     {
@@ -650,11 +613,8 @@
       case AFM_TOKEN_TRACKKERN:
         n++;
 
-        if ( n >= (int)fi->NumTrackKern )
-          {
-            FT_ERROR(( "afm_parse_track_kern: too many track kern data\n" ));
-            goto Fail;
-          }
+        if ( n >= fi->NumTrackKern )
+          goto Fail;
 
         tk = fi->TrackKerns + n;
 
@@ -664,12 +624,7 @@
         shared_vals[3].type = AFM_VALUE_TYPE_FIXED;
         shared_vals[4].type = AFM_VALUE_TYPE_FIXED;
         if ( afm_parser_read_vals( parser, shared_vals, 5 ) != 5 )
-        {
-          FT_ERROR(( "afm_parse_track_kern:"
-                     " insufficient number of parameters for entry %d\n",
-                     n ));
           goto Fail;
-        }
 
         tk->degree     = shared_vals[0].u.i;
         tk->min_ptsize = shared_vals[1].u.f;
@@ -682,19 +637,7 @@
       case AFM_TOKEN_ENDTRACKKERN:
       case AFM_TOKEN_ENDKERNDATA:
       case AFM_TOKEN_ENDFONTMETRICS:
-        tmp = n + 1;
-        if ( (FT_UInt)tmp != fi->NumTrackKern )
-        {
-          FT_TRACE1(( "afm_parse_track_kern: %s%d track kern entr%s seen\n",
-                      tmp == 0 ? "" : "only ",
-                      tmp,
-                      tmp == 1 ? "y" : "ies" ));
-          fi->NumTrackKern = (FT_UInt)tmp;
-        }
-        else
-          FT_TRACE3(( "afm_parse_track_kern: %d track kern entr%s seen\n",
-                      tmp,
-                      tmp == 1 ? "y" : "ies" ));
+        fi->NumTrackKern = n + 1;
         return FT_Err_Ok;
 
       case AFM_TOKEN_UNKNOWN:
@@ -715,7 +658,7 @@
 
 
   /* compare two kerning pairs */
-  FT_COMPARE_DEF( int )
+  FT_CALLBACK_DEF( int )
   afm_compare_kern_pairs( const void*  a,
                           const void*  b )
   {
@@ -738,39 +681,15 @@
   static FT_Error
   afm_parse_kern_pairs( AFM_Parser  parser )
   {
-    AFM_FontInfo  fi     = parser->FontInfo;
-    AFM_Stream    stream = parser->stream;
+    AFM_FontInfo  fi = parser->FontInfo;
     AFM_KernPair  kp;
     char*         key;
     FT_Offset     len;
     int           n = -1;
-    FT_Int        tmp;
 
 
-    if ( afm_parser_read_int( parser, &tmp ) )
+    if ( afm_parser_read_int( parser, &fi->NumKernPair ) )
       goto Fail;
-
-    if ( tmp < 0 )
-    {
-      FT_ERROR(( "afm_parse_kern_pairs: invalid number of kern pairs\n" ));
-      goto Fail;
-    }
-
-    fi->NumKernPair = (FT_UInt)tmp;
-    FT_TRACE3(( "afm_parse_kern_pairs: %u kern pair%s expected\n",
-                fi->NumKernPair,
-                fi->NumKernPair == 1 ? "" : "s" ));
-
-    /* Rough sanity check: The minimum line length of the `KP`,    */
-    /* `KPH`,`KPX`, and `KPY` commands is 10 characters (including */
-    /* the EOL character).                                         */
-    if ( (FT_ULong)( stream->limit - stream->cursor ) / 10 <
-           fi->NumKernPair )
-    {
-      FT_ERROR(( "afm_parse_kern_pairs:"
-                 " number of kern pairs exceeds stream size\n" ));
-      goto Fail;
-    }
 
     if ( fi->NumKernPair )
     {
@@ -799,11 +718,8 @@
 
           n++;
 
-          if ( n >= (int)fi->NumKernPair )
-          {
-            FT_ERROR(( "afm_parse_kern_pairs: too many kern pairs\n" ));
+          if ( n >= fi->NumKernPair )
             goto Fail;
-          }
 
           kp = fi->KernPairs + n;
 
@@ -813,16 +729,10 @@
           shared_vals[3].type = AFM_VALUE_TYPE_INTEGER;
           r = afm_parser_read_vals( parser, shared_vals, 4 );
           if ( r < 3 )
-          {
-            FT_ERROR(( "afm_parse_kern_pairs:"
-                       " insufficient number of parameters for entry %d\n",
-                       n ));
             goto Fail;
-          }
 
-          /* index values can't be negative */
-          kp->index1 = shared_vals[0].u.u;
-          kp->index2 = shared_vals[1].u.u;
+          kp->index1 = shared_vals[0].u.i;
+          kp->index2 = shared_vals[1].u.i;
           if ( token == AFM_TOKEN_KPY )
           {
             kp->x = 0;
@@ -840,20 +750,7 @@
       case AFM_TOKEN_ENDKERNPAIRS:
       case AFM_TOKEN_ENDKERNDATA:
       case AFM_TOKEN_ENDFONTMETRICS:
-        tmp = n + 1;
-        if ( (FT_UInt)tmp != fi->NumKernPair )
-        {
-          FT_TRACE1(( "afm_parse_kern_pairs: %s%d kern pair%s seen\n",
-                      tmp == 0 ? "" : "only ",
-                      tmp,
-                      tmp == 1 ? "" : "s" ));
-          fi->NumKernPair = (FT_UInt)tmp;
-        }
-        else
-          FT_TRACE3(( "afm_parse_kern_pairs: %d kern pair%s seen\n",
-                      tmp,
-                      tmp == 1 ? "" : "s" ));
-
+        fi->NumKernPair = n + 1;
         ft_qsort( fi->KernPairs, fi->NumKernPair,
                   sizeof ( AFM_KernPairRec ),
                   afm_compare_kern_pairs );
@@ -879,43 +776,22 @@
     char*      key;
     FT_Offset  len;
 
-    int  have_trackkern = 0;
-    int  have_kernpairs = 0;
-
 
     while ( ( key = afm_parser_next_key( parser, 1, &len ) ) != 0 )
     {
       switch ( afm_tokenize( key, len ) )
       {
       case AFM_TOKEN_STARTTRACKKERN:
-        if ( have_trackkern )
-        {
-          FT_ERROR(( "afm_parse_kern_data:"
-                     " invalid second horizontal track kern section\n" ));
-          goto Fail;
-        }
-
         error = afm_parse_track_kern( parser );
         if ( error )
           return error;
-
-        have_trackkern = 1;
         break;
 
       case AFM_TOKEN_STARTKERNPAIRS:
       case AFM_TOKEN_STARTKERNPAIRS0:
-        if ( have_kernpairs )
-        {
-          FT_ERROR(( "afm_parse_kern_data:"
-                     " invalid second horizontal kern pair section\n" ));
-          goto Fail;
-        }
-
         error = afm_parse_kern_pairs( parser );
         if ( error )
           return error;
-
-        have_kernpairs = 1;
         break;
 
       case AFM_TOKEN_ENDKERNDATA:
@@ -937,7 +813,7 @@
 
   static FT_Error
   afm_parser_skip_section( AFM_Parser  parser,
-                           FT_Int      n,
+                           FT_UInt     n,
                            AFM_Token   end_section )
   {
     char*      key;
@@ -1060,8 +936,7 @@
         error = afm_parse_kern_data( parser );
         if ( error )
           goto Fail;
-        /* we only support kern data, so ... */
-        /* fall through                      */
+        /* fall through since we only support kern data */
 
       case AFM_TOKEN_ENDFONTMETRICS:
         return FT_Err_Ok;
@@ -1082,13 +957,6 @@
 
     return error;
   }
-
-#else /* T1_CONFIG_OPTION_NO_AFM */
-
-  /* ANSI C doesn't like empty source files */
-  typedef int  _afm_parse_dummy;
-
-#endif /* T1_CONFIG_OPTION_NO_AFM */
 
 
 /* END */
