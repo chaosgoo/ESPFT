@@ -62,11 +62,11 @@ st7789_rgb_to_color_dither(uint8_t r, uint8_t g, uint8_t b, uint16_t x,
   return st7789_rgb_to_color(r, g, b);
 }
 
-extern const uint8_t ttf_start[] asm("_binary_src_Lite_ttf_start");
-extern const uint8_t ttf_end[] asm("_binary_src_Lite_ttf_end");
+// extern const uint8_t ttf_start[] asm("_binary_src_Lite_ttf_start");
+// extern const uint8_t ttf_end[] asm("_binary_src_Lite_ttf_end");
 
-// extern const uint8_t ttf_start[] asm("_binary_src_Ubuntu_R_ttf_start");
-// extern const uint8_t ttf_end[] asm("_binary_src_Ubuntu_R_ttf_end");
+extern const uint8_t ttf_start[] asm("_binary_src_Lite2_ttf_start");
+extern const uint8_t ttf_end[] asm("_binary_src_Lite2_ttf_end");
 
 TFT_eSPI tft = TFT_eSPI();
 static FT_Library library;
@@ -94,7 +94,7 @@ void loadCharacter(char character, int pixel_height)
   printf("FT_Set_Pixel_Sizes(face, 0,  %d):%d\n", pixel_height, error);
   FT_UInt glyph_index = FT_Get_Char_Index(face, (uint32_t)character);
   printf("glyph_index:%d\n", glyph_index);
-  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
   error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
   printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
@@ -129,7 +129,7 @@ void setup()
   initFreeType();
   Serial.printf("Done.\n");
 }
-int ph = 12;
+int ph = 32;
 int flag = 1;
 void loop()
 {
@@ -163,7 +163,7 @@ void loop()
   // tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
   //               face->glyph->bitmap.buffer);
 
-  delay(10000);
+  delay(1000);
   free(bitmap);
   FT_Done_Face(face);
   if (ph > 120)

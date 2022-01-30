@@ -4,7 +4,8 @@
 /*                                                                         */
 /*    PostScript hinting algorithm (body).                                 */
 /*                                                                         */
-/*  Copyright 2001-2010, 2012, 2013 by                                     */
+/*  Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010   */
+/*            by                                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used        */
@@ -562,7 +563,7 @@
               else if ( len > 0 )
               {
                 /* This is a very small stem; we simply align it to the
-                 * pixel grid, trying to find the minimum displacement.
+                 * pixel grid, trying to find the minimal displacement.
                  *
                  * left               = pos
                  * right              = pos + len
@@ -1161,8 +1162,8 @@
     int     result = PSH_DIR_NONE;
 
 
-    ax = FT_ABS( dx );
-    ay = FT_ABS( dy );
+    ax = ( dx >= 0 ) ? dx : -dx;
+    ay = ( dy >= 0 ) ? dy : -dy;
 
     if ( ay * 12 < ax )
     {
@@ -1861,10 +1862,12 @@
             point->cur_u = hint->cur_pos + hint->cur_len +
                              FT_MulFix( delta - hint->org_len, scale );
 
-          else /* hint->org_len > 0 */
+          else if ( hint->org_len > 0 )
             point->cur_u = hint->cur_pos +
                              FT_MulDiv( delta, hint->cur_len,
                                         hint->org_len );
+          else
+            point->cur_u = hint->cur_pos;
         }
         psh_point_set_fitted( point );
       }
@@ -2193,7 +2196,7 @@
 
     /* something to do? */
     if ( outline->n_points == 0 || outline->n_contours == 0 )
-      return FT_Err_Ok;
+      return PSH_Err_Ok;
 
 #ifdef DEBUG_HINTER
 
