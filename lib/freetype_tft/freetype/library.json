@@ -13,18 +13,28 @@
   "build": {
     "srcFilter": [
       "+<base/ftsystem.c>",
+      "+<base/ftmm.c>",
       "+<base/ftinit.c>",
       "+<base/ftdebug.c>",
+
       "+<base/ftbase.c>",
+
+      "+<base/ftbbox.c>",
+      "+<base/ftglyph.c>",
+
+      "+<base/ftbdf.c>",
+
+      "+<bdf/bdf.c>",
+      "+<cff/cff.c>",
       "+<truetype/truetype.c>",
       "+<sfnt/sfnt.c>",
+      "+<sdf/sdf.c>",
+
       "+<smooth/smooth.c>",
-      "+<base/<bitmap.c>",
-      "+<base/ftadvanc.c>",
+
       "+<cache/ftcache.c>",
       "+<gzip/ftgzip.c>",
-      "+<base/ftbitmap.c>",
-      "+<base/ftadvanc.c>"
+      "+<base/ftbitmap.c>"
     ],
     "flags": [
       "-DFT2_BUILD_LIBRARY",

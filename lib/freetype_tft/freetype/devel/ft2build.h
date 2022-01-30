@@ -33,7 +33,7 @@
 #define FT_CONFIG_MODULES_H  <ftmodule.h>
 #define FT_CONFIG_OPTIONS_H  <ftoption.h>
 
-#include <freetype/config/ftheader.h>
+#include <config/ftheader.h>
 
 #endif /* FT2BUILD_H_ */
 

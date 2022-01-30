@@ -62,11 +62,11 @@ st7789_rgb_to_color_dither(uint8_t r, uint8_t g, uint8_t b, uint16_t x,
   return st7789_rgb_to_color(r, g, b);
 }
 
-// extern const uint8_t ttf_start[] asm("_binary_src_Lite_ttf_start");
-// extern const uint8_t ttf_end[] asm("_binary_src_Lite_ttf_end");
+extern const uint8_t ttf_start[] asm("_binary_src_Lite_ttf_start");
+extern const uint8_t ttf_end[] asm("_binary_src_Lite_ttf_end");
 
-extern const uint8_t ttf_start[] asm("_binary_src_Lite2_ttf_start");
-extern const uint8_t ttf_end[] asm("_binary_src_Lite2_ttf_end");
+// extern const uint8_t ttf_start[] asm("_binary_src_Lite2_ttf_start");
+// extern const uint8_t ttf_end[] asm("_binary_src_Lite2_ttf_end");
 
 TFT_eSPI tft = TFT_eSPI();
 static FT_Library library;
@@ -87,37 +87,34 @@ void loadCharacter(char character, int pixel_height)
       "&face):%d\n",
       error);
   FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-
   error = FT_Set_Pixel_Sizes(face,          /* handle to face object */
                              0,             /* pixel_width           */
                              pixel_height); /* pixel_height          */
   printf("FT_Set_Pixel_Sizes(face, 0,  %d):%d\n", pixel_height, error);
   FT_UInt glyph_index = FT_Get_Char_Index(face, (uint32_t)character);
   printf("glyph_index:%d\n", glyph_index);
-  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT | FT_LOAD_RENDER);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
   error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
   printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
-  FT_Bitmap bitmap;
-  FT_Bitmap_New(&bitmap);
-  FT_Bitmap_Convert(library, &face->glyph->bitmap, &bitmap, 1);
   size_t pos = 0;
-  for (size_t y = 0; y < bitmap.rows; ++y)
-  {
-    for (size_t x = 0; x < bitmap.width; ++x)
-    {
-      int color =
-          bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-      // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
-      printf("%d", color);
-      if ((++pos % bitmap.pitch) == 0)
-      {
-        printf("\n");
-      }
-    }
-  }
-  tft.pushImage(0, 0, bitmap.width, bitmap.rows,
-                bitmap.buffer);
+  // for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
+  // {
+  //   for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
+  //   {
+  //     int color =
+  //         face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+  //     // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+  //     printf("%d", color);
+  //     if ((++pos % face->glyph->bitmap.pitch) == 0)
+  //     {
+  //       printf("\n");
+  //     }
+  //   }
+  // }
+  tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
+                face->glyph->bitmap.buffer);
 }
 
 void setup()
@@ -164,7 +161,7 @@ void loop()
   // tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
   //               face->glyph->bitmap.buffer);
 
-  delay(1000);
+  delay(10000);
   free(bitmap);
   FT_Done_Face(face);
   if (ph > 120)

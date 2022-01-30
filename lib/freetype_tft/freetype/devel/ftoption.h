@@ -52,7 +52,7 @@ FT_BEGIN_HEADER
    *
    *   ```
    *     #define FT_CONFIG_OPTIONS_H  <myftoptions.h>
-   *     #include <freetype/config/ftheader.h>
+   *     #include <config/ftheader.h>
    *   ```
    *
    *   will use `$BUILD/myftoptions.h` instead of this file for macro
@@ -426,8 +426,8 @@ FT_BEGIN_HEADER
    *   Do not `#undef` these macros here since the build system might define
    *   them for certain configurations only.
    */
-#define FT_DEBUG_LEVEL_ERROR
-#define FT_DEBUG_LEVEL_TRACE
+// #define FT_DEBUG_LEVEL_ERROR
+// #define FT_DEBUG_LEVEL_TRACE
 
 
   /**************************************************************************
@@ -442,7 +442,7 @@ FT_BEGIN_HEADER
    *   to a file, FreeType uses an the external `dlg` library (the source
    *   code is in `src/dlg`).
    */
-#define FT_DEBUG_LOGGING
+// #define FT_DEBUG_LOGGING
 
 
   /**************************************************************************
