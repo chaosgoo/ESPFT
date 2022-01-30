@@ -133,6 +133,7 @@ int ph = 32;
 int flag = 1;
 void loop()
 {
+  tft.fillScreen(TFT_BLACK);
   ph += flag;
   loadCharacter('a', ph);
   Serial.printf("loadCharacter Done.\n");
