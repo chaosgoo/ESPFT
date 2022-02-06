@@ -43,8 +43,9 @@
 
     *aservice = NULL;
 
-    if ( !face )
+    if ( !face ){
       return FT_THROW( Invalid_Face_Handle );
+    }
 
     error = FT_ERR( Invalid_Argument );
 
@@ -53,7 +54,6 @@
       FT_FACE_LOOKUP_SERVICE( face,
                               *aservice,
                               MULTI_MASTERS );
-
       if ( *aservice )
         error = FT_Err_Ok;
     }
@@ -136,8 +136,9 @@
     if ( !error )
     {
       error = FT_ERR( Invalid_Argument );
-      if ( service->get_mm_var )
+      if ( service->get_mm_var ){
         error = service->get_mm_var( face, amaster );
+      }
     }
 
     return error;

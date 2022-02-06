@@ -237,6 +237,7 @@
   FT_Stream_Open( FT_Stream    stream,
                   const char*  filepathname )
   {
+    printf("FT_Stream_Open\n");
     FT_FILE*  file;
 
 
@@ -265,6 +266,7 @@
     {
       FT_ERROR(( "FT_Stream_Open:" ));
       FT_ERROR(( " opened `%s' but zero-sized\n", filepathname ));
+      printf("FT_Stream_Open ft_fclose\n");
       ft_fclose( file );
       return FT_THROW( Cannot_Open_Stream );
     }

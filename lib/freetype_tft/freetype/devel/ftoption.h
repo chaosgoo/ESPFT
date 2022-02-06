@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * ftoption.h (for development)
+ * ftoption.h
  *
  *   User-selectable configuration macros (specification only).
  *
@@ -52,7 +52,7 @@ FT_BEGIN_HEADER
    *
    *   ```
    *     #define FT_CONFIG_OPTIONS_H  <myftoptions.h>
-   *     #include <config/ftheader.h>
+   *     #include <freetype/config/ftheader.h>
    *   ```
    *
    *   will use `$BUILD/myftoptions.h` instead of this file for macro
@@ -240,7 +240,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-#define FT_CONFIG_OPTION_USE_BZIP2
+/* #define FT_CONFIG_OPTION_USE_BZIP2 */
 
 
   /**************************************************************************
@@ -269,7 +269,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-#define FT_CONFIG_OPTION_USE_PNG
+/* #define FT_CONFIG_OPTION_USE_PNG */
 
 
   /**************************************************************************
@@ -286,7 +286,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-#define FT_CONFIG_OPTION_USE_HARFBUZZ
+/* #define FT_CONFIG_OPTION_USE_HARFBUZZ */
 
 
   /**************************************************************************
@@ -302,7 +302,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-#define FT_CONFIG_OPTION_USE_BROTLI
+/* #define FT_CONFIG_OPTION_USE_BROTLI */
 
 
   /**************************************************************************
@@ -426,8 +426,8 @@ FT_BEGIN_HEADER
    *   Do not `#undef` these macros here since the build system might define
    *   them for certain configurations only.
    */
-// #define FT_DEBUG_LEVEL_ERROR
-// #define FT_DEBUG_LEVEL_TRACE
+/* #define FT_DEBUG_LEVEL_ERROR */
+/* #define FT_DEBUG_LEVEL_TRACE */
 
 
   /**************************************************************************
@@ -441,8 +441,10 @@ FT_BEGIN_HEADER
    *   trace log messages to a file instead of `stderr`.  For writing logs
    *   to a file, FreeType uses an the external `dlg` library (the source
    *   code is in `src/dlg`).
+   *
+   *   This option needs a C99 compiler.
    */
-// #define FT_DEBUG_LOGGING
+/* #define FT_DEBUG_LOGGING */
 
 
   /**************************************************************************
@@ -483,7 +485,7 @@ FT_BEGIN_HEADER
    *   Do not `#undef` these macros here since the build system might define
    *   them for certain configurations only.
    */
-#define FT_DEBUG_AUTOFIT
+/* #define FT_DEBUG_AUTOFIT */
 
 
   /**************************************************************************
@@ -501,7 +503,7 @@ FT_BEGIN_HEADER
    *   Do not `#undef` this macro here since the build system might define it
    *   for certain configurations only.
    */
-#define FT_DEBUG_MEMORY
+/* #define FT_DEBUG_MEMORY */
 
 
   /**************************************************************************
@@ -685,9 +687,9 @@ FT_BEGIN_HEADER
    * [1]
    * https://www.microsoft.com/typography/cleartype/truetypecleartype.aspx
    */
-/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  1     */
-/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  2     */
-#define TT_CONFIG_OPTION_SUBPIXEL_HINTING     ( 1 | 2 )
+/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  1         */
+#define TT_CONFIG_OPTION_SUBPIXEL_HINTING  2
+/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING  ( 1 | 2 ) */
 
 
   /**************************************************************************
@@ -806,7 +808,7 @@ FT_BEGIN_HEADER
    * switch between the two engines using the `hinting-engine` property of
    * the 'type1' driver module.
    */
-#define T1_CONFIG_OPTION_OLD_ENGINE
+/* #define T1_CONFIG_OPTION_OLD_ENGINE */
 
 
   /*************************************************************************/
@@ -848,7 +850,7 @@ FT_BEGIN_HEADER
    * between the two engines using the `hinting-engine` property of the 'cff'
    * driver module.
    */
-#define CFF_CONFIG_OPTION_OLD_ENGINE
+/* #define CFF_CONFIG_OPTION_OLD_ENGINE */
 
 
   /*************************************************************************/
@@ -875,7 +877,7 @@ FT_BEGIN_HEADER
    * If this option is activated, it can be controlled with the
    * `no-long-family-names` property of the 'pcf' driver module.
    */
-#define PCF_CONFIG_OPTION_LONG_FAMILY_NAMES
+/* #define PCF_CONFIG_OPTION_LONG_FAMILY_NAMES */
 
 
   /*************************************************************************/

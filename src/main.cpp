@@ -1,3 +1,29 @@
+// #include <Arduino.h>
+// #include "Port/Display.h"
+// #include "FontRender/FontRender.h"
+// extern const uint8_t ttf_start[] asm("_binary_src_Lite_ttf_start");
+// extern const uint8_t ttf_end[] asm("_binary_src_Lite_ttf_end");
+
+// FontRender fontrender;
+// void setup()
+// {
+//   FontInfo fontinfo = {
+//       (FT_Byte *)ttf_start,
+//       ttf_end - ttf_start - 1,
+//       0,
+//       (FT_Size)24,
+//       (FT_Size)100};
+//   Serial.begin(115200);
+//   DisplayInit();
+//   fontrender = FontRender(fontinfo);
+// }
+
+// void loop()
+// {
+//   delay(1000);
+// }
+
+
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 extern "C"
@@ -6,6 +32,7 @@ extern "C"
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_BITMAP_H
+#include FT_SIZES_H
 }
 typedef uint16_t st7789_color_t;
 
@@ -86,33 +113,33 @@ void loadCharacter(char character, int pixel_height)
       "FT_New_Memory_Face(library, ttf_start, ttf_end - ttf_start - 1, 0, "
       "&face):%d\n",
       error);
-  FT_Select_Charmap(face, FT_ENCODING_UNICODE);
   error = FT_Set_Pixel_Sizes(face,          /* handle to face object */
                              0,             /* pixel_width           */
-                             pixel_height); /* pixel_height          */
+                             32); /* pixel_height          */
   printf("FT_Set_Pixel_Sizes(face, 0,  %d):%d\n", pixel_height, error);
   FT_UInt glyph_index = FT_Get_Char_Index(face, (uint32_t)character);
   printf("glyph_index:%d\n", glyph_index);
-
-  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT | FT_LOAD_RENDER);
+  FT_Activate_Size(face->size);
+  printf("face->size->metrics.y_scale:%d\n",face->size->metrics.y_scale);
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
   printf("FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT):%d\n", error);
   error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
   printf("FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL):%d\n", error);
   size_t pos = 0;
-  // for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
-  // {
-  //   for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
-  //   {
-  //     int color =
-  //         face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-  //     // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
-  //     printf("%d", color);
-  //     if ((++pos % face->glyph->bitmap.pitch) == 0)
-  //     {
-  //       printf("\n");
-  //     }
-  //   }
-  // }
+  for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
+  {
+    for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
+    {
+      int color =
+          face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+      // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+      printf("%d", color);
+      if ((++pos % face->glyph->bitmap.pitch) == 0)
+      {
+        printf("\n");
+      }
+    }
+  }
   tft.pushImage(0, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
                 face->glyph->bitmap.buffer);
 }

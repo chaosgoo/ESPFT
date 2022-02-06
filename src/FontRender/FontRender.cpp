@@ -12,8 +12,15 @@ FontRender::FontRender(FontInfo fontInfo)
 
     error = FT_New_Memory_Face(library, fontData.file_base, fontData.file_size, fontData.face_index, &face);
 
+    FT_Size size;
+    error = FT_New_Size(face, &size);
+    if (error)
+    {
+        printf("FT_New_Size error:%d\n", error);
+    }
+    FT_Activate_Size(size);
     FT_Set_Pixel_Sizes(face, 0, (FT_UInt)fontInfo.font_width);
-
+    FT_Reference_Face(face);
     if (error)
     {
         printf("FT_New_Memory_Face error:%d\n", error);
@@ -54,13 +61,37 @@ FontRender::FontRender(FontInfo fontInfo)
         selected_ic = &current_ic;
     }
     printf("FTC_SBitCache_Lookup\n");
-    if (FTC_SBitCache_LookupScaler(sbit_cache, selected_ic, FT_LOAD_DEFAULT,
-                                   glyph_idx, &sbit, (FTC_Node *)NULL))
+    FTC_ImageTypeRec desc_sbit_type;
+    desc_sbit_type.face_id = (FTC_FaceID)1;
+    desc_sbit_type.flags = FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL;
+    desc_sbit_type.height = 24;
+    desc_sbit_type.width = 24;
+    error = FTC_SBitCache_Lookup(sbit_cache, &desc_sbit_type,
+                                 glyph_idx, &sbit, NULL);
+    if (error)
     {
-        printf("error");
+        printf("FTC_SBitCache_Lookup error(%d)", error);
     }
-
-
+    printf("width:%d, height:%d format%d max_grays:%d\n", sbit->width, sbit->height, sbit->format, sbit->max_grays);
+    size_t pos = 0;
+    for (size_t y = 0; y < sbit->height; ++y)
+    {
+        for (size_t x = 0; x < sbit->width; ++x)
+        {
+            int color =
+                sbit->buffer[y * sbit->pitch + x];
+            // bitmap[pos >> 2] |= ((color >> 6) << ((pos & 0x03) << 1));
+            printf("%d", color);
+            if ((++pos % sbit->pitch) == 0)
+            {
+                printf("\n");
+            }
+        }
+    }
+    if (sbit->buffer == NULL)
+    {
+        printf("sbit.buffer is null \n");
+    }
 }
 
 FontRender::~FontRender()
